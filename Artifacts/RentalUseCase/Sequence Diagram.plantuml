@@ -1,0 +1,34 @@
+@startuml Sequence Diagram
+skinparam sequenceMessageAlign center
+skinparam noteTextAlignment center
+title "System Sequence Diagram for the Rental Use Case"
+actor User
+participant "System" as terminal
+
+User -> terminal : accessTerminal()
+terminal --> User : confirmation
+loop Search and Rent a Vehicle
+    User -> terminal : searchSharedVehicle(startDate, endDate, time, pickUpLocation, dropOffLocation)
+    terminal --> User : availableVehiclesResults
+    alt Filter Vehicle Result
+        User -> terminal : filterVehicles(type, make, model, priceRange, seatingCapacity, fuelType, transmissionType)
+        terminal --> User : filteredVehiclesResults
+    end
+    User -> terminal : selectVehicle(vehicleId)
+    terminal --> User : vehicleDetails
+    User -> terminal : confirmRental()
+    terminal --> User : rentalConfirmation
+    alt Process Payment Now
+        User -> terminal : processPayment(paymentDetails)
+        terminal -> PaymentGateway : processPayment(paymentDetails)
+        PaymentGateway --> terminal : paymentResult
+        alt Payment Successful
+        terminal --> User : paymentConfirmation
+        else Payment Failed
+        terminal --> User : paymentFailureMessage
+        end
+    end
+end
+User -> terminal : end()
+terminal --> User : confirmation
+@enduml
