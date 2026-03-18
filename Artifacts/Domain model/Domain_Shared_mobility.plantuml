@@ -1,0 +1,65 @@
+@startuml Domain Model
+skinparam DefaultFontName Arial
+skinparam DefaultFontSize 16
+skinparam DefaultFontStyle bold
+skinparam ArrowThickness 2.2
+title Domain Model Diagram - Shared Mobility
+hide empty members
+
+class Terminal{}
+
+class SharedMobilityManagementSystem{}
+
+
+class CarCatalog{}
+
+class Car{}
+
+class BikeCatalog{}
+
+class Bike{}
+
+class ScooterCatalog{}
+
+class Scooter{}
+
+class UserCatalog{}
+
+class User{}
+
+class Admin{}
+
+class ReservationCatalog{}
+
+class Reservation{}
+
+
+UserCatalog *-- "*" User
+User <|-- Admin
+
+Admin -- SharedMobilityManagementSystem : monitors >
+
+SharedMobilityManagementSystem "1" -- "1" CarCatalog
+SharedMobilityManagementSystem "1" -- "1" BikeCatalog
+SharedMobilityManagementSystem "1" -- "1" ScooterCatalog
+
+CarCatalog *-- "*" Car
+BikeCatalog *-- "*" Bike
+ScooterCatalog *-- "*" Scooter
+
+Terminal "1" -- "1" SharedMobilityManagementSystem
+Terminal "1"--"1" UserCatalog
+Terminal "1"--"1" ReservationCatalog
+
+ReservationCatalog "1" *-- "*" Reservation
+
+User "*" -- "*" Bike : reserves >
+User "*" -- "*" Car : reserves >
+User "*" -- "*" Scooter : reserves >
+
+(Car, User) . Reservation
+(Bike, User) . Reservation
+(Scooter, User) . Reservation
+
+
+@enduml

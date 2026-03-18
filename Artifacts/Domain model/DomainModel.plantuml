@@ -1,0 +1,182 @@
+@startuml Domain Model
+skinparam DefaultFontName Arial
+skinparam DefaultFontSize 16
+skinparam DefaultFontStyle bold
+title Domain Model Diagram
+hide empty members
+
+class Terminal{}
+
+class CityCatalog{}
+
+class City{
+    {field} name : String
+}
+
+class SharedVehicleCatalog{}
+
+class Car{
+    {field} licensePlate : String
+    {field} model : String
+    {field} brand : String
+    {field} color : String
+    {field} capacity : int
+}
+
+abstract class SharedVehicle{
+    {field} vehicleID : String
+    {field} isAvailable : boolean
+    {field} currentLocation : Location
+    {field} vehicleType : VehicleType
+}
+
+class Bike{}
+
+class Scooter{}
+
+class UserCatalog{}
+
+class User{
+    {field} userID : String
+    {field} name : String
+    {field} email : String
+    {field} phoneNumber : String
+    {field} preferredVehicleType : VehicleType
+    {field} preferredCity : City
+}
+
+class Admin{
+    {field} adminID : String
+    {field} name : String
+    {field} email : String
+    {field} phoneNumber : String
+}
+
+class ParkingSpotCatalog{}
+
+class ParkingSpot{
+    {field} spotID :  String
+    {field} isAvailable : boolean
+}
+
+class ReservationCatalog{}
+
+class Reservation{
+    {field} reservationID : String
+    {field} startTime : DateTime
+    {field} endTime : DateTime
+    {field} status : Status
+}
+
+class PublicTransportCatalog{}
+
+abstract class PublicTransport{
+    {field} routeID : String
+}
+
+class Bus{
+    {field} busNumber : String
+}
+
+class Train{
+    {field} trainNumber : String
+}
+
+class Tram{
+    {field} tramNumber : String
+}
+
+class Subway{
+    {field} subwayNumber : String
+}
+
+class RouteCatalog{}
+
+class Route{
+    {field} routeID : String
+    {field} startTime : DateTime
+    {field} endTime : DateTime
+}
+
+class LocationCatalog{}
+
+class Location{
+    {field} latitude : double
+    {field} longitude : double
+}
+
+PublicTransportCatalog *-- "*" PublicTransport
+PublicTransport <|-- Bus
+PublicTransport <|-- Train
+PublicTransport <|-- Tram
+
+ParkingSpot "*" -- "1" City : located in >
+
+PublicTransport "1" -- "1" Route : follows >
+
+UserCatalog *-- "*" User
+User <|-- Admin
+
+Admin -- SharedVehicleCatalog : monitors >
+Admin -- ParkingSpotCatalog : monitors >
+Admin -- PublicTransportCatalog : monitors >
+Admin -- ReservationCatalog : monitors >
+
+SharedVehicleCatalog *-- "*" SharedVehicle
+SharedVehicle <|-- Car
+SharedVehicle <|-- Bike
+SharedVehicle <|-- Scooter
+
+Terminal "1" -- "1" SharedVehicleCatalog
+Terminal "1"-- "1" ParkingSpotCatalog
+Terminal "1"--"1" PublicTransportCatalog
+Terminal "1"--"1" UserCatalog
+Terminal "1"--"1" ReservationCatalog
+Terminal "1"--"1" CityCatalog
+Terminal "1"--"1" RouteCatalog
+Terminal "1"--"1" LocationCatalog
+
+CityCatalog *-- "*" City
+
+
+ReservationCatalog "1" *-- "*" Reservation
+ParkingSpotCatalog "1" *-- "*" ParkingSpot
+
+User "*" -- "*" ParkingSpot : reserves >
+User "*" -- "*" Bike : reserves >
+User "*" -- "*" Car : reserves >
+User "*" -- "*" Scooter : reserves >
+
+User "1" -- "1" City : prefers >
+
+User "1" -- "1" SharedVehicle : prefers >
+
+(Car, User) . Reservation
+(Bike, User) . Reservation
+(Scooter, User) . Reservation
+(User, ParkingSpot) . Reservation
+
+RouteCatalog *-- "*" Route
+
+LocationCatalog *-- "*" Location
+City "1" -- "*" Location : has >
+Location "* origin" -- "* destination" Location
+SharedVehicle "1" -- "1" Location : current location >
+ParkingSpot "1" -- "1" Location : located at >
+
+(Location, Location) . Route
+
+enum Status{
+    ACTIVE
+    COMPLETED
+    CANCELLED
+}
+
+enum VehicleType{
+    CAR
+    BIKE
+    SCOOTER
+}
+
+
+@enduml
