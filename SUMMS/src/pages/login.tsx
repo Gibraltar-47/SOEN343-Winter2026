@@ -45,12 +45,21 @@ export default function Login({
   const [password, setPassword] = useState("");
 
   const handleLogin = () => {
-    if (onLogin) {
-      onLogin(email, password);
+
+    const existingClients: Client[] = JSON.parse(
+      localStorage.getItem("clients") || "[]"
+    );
+
+    const emailAlreadyExists = existingClients.some(
+      (client) => client.email.toLowerCase() === email.toLowerCase()
+    );
+
+    if (emailAlreadyExists) {
+      alert("Login successful!");
+      navigate("/signup");
       return;
     }
-
-    console.log("Login attempt:", { email, password });
+    alert("Invalid email or password. Please try again.");
   };
 
   const handleSignUp = () => {
@@ -125,21 +134,23 @@ export default function Login({
               />
             </div>
 
-            <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:justify-center">
+
+            <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:justify-center">
               <button
                 onClick={handleLogin}
                 className="
-                  h-12 min-w-[130px] rounded-full bg-[#41a7ff] px-6
+                  h-12 w-full max-w-[420px] rounded-full bg-[#41a7ff] px-6
                   text-sm font-semibold text-white transition hover:bg-blue-600
                 "
               >
                 Log In
               </button>
-
+            </div>
+            <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:justify-center">
               <button
                 onClick={handleSignUp}
                 className="
-                  h-12 min-w-[130px] rounded-full bg-[#1fae19] px-6
+                  h-12 min-w-[140px] rounded-full bg-[#1fae19] px-6
                   text-sm font-semibold text-white transition hover:bg-green-700
                 "
               >

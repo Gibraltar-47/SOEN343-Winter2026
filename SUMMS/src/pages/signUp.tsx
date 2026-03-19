@@ -5,7 +5,12 @@ import { useNavigate } from "react-router-dom";
 
 type SignUpProps = {
   onLogin?: () => void;
-  onSignUp?: (email: string, password: string) => void;
+  onSignUp?: (
+    firstName: string,
+    lastName: string,
+    email: string,
+    password: string
+  ) => void;
 };
 
 function InputField({
@@ -14,7 +19,7 @@ function InputField({
   value,
   onChange,
 }: {
-  type: "email" | "password";
+  type: "text" | "email" | "password";
   placeholder: string;
   value: string;
   onChange: (value: string) => void;
@@ -38,27 +43,50 @@ function InputField({
 export default function Login({
   onLogin,
   onSignUp,
-}: LoginProps) {
+}: SignUpProps) {
   const navigate = useNavigate();
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
 
   const handleLogin = () => {
     if (onLogin) {
-      onLogin(email, password);
+      onLogin();
       return;
     }
+
     navigate("/");
-    console.log("Navigate to sign up");
   };
 
   const handleSignUp = () => {
-    if (onSignUp) {
-      onSignUp();
+    const newClient: Client = {
+      firstName,
+      lastName,
+      email,
+      password,
+    };
+
+    const existingClients: Client[] = JSON.parse(
+      localStorage.getItem("clients") || "[]"
+    );
+
+    const emailAlreadyExists = existingClients.some(
+      (client) => client.email.toLowerCase() === email.toLowerCase()
+    );
+
+    if (emailAlreadyExists) {
+      alert("A client with this email already exists.");
       return;
     }
 
-    console.log("SignUp attempt:", { email, password });
+    existingClients.push(newClient);
+    localStorage.setItem("clients", JSON.stringify(existingClients));
+
+    console.log("Saved clients:", existingClients);
+    alert("Sign up successful!");
+
+    navigate("/");
   };
 
   return (
@@ -104,10 +132,24 @@ export default function Login({
             "
           >
             <h1 className="mb-6 text-center text-[32px] font-medium text-[#297525]">
-              Login
+              Sign Up
             </h1>
 
             <div className="space-y-4">
+              <InputField
+                type="text"
+                placeholder="First Name"
+                value={firstName}
+                onChange={setFirstName}
+              />
+
+              <InputField
+                type="text"
+                placeholder="Last Name"
+                value={lastName}
+                onChange={setLastName}
+              />
+
               <InputField
                 type="email"
                 placeholder="Email"
@@ -125,23 +167,24 @@ export default function Login({
 
             <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:justify-center">
               <button
-                onClick={handleLogin}
-                className="
-                  h-12 min-w-[130px] rounded-full bg-[#41a7ff] px-6
-                  text-sm font-semibold text-white transition hover:bg-blue-600
-                "
-              >
-                Log In
-              </button>
-
-              <button
                 onClick={handleSignUp}
                 className="
-                  h-12 min-w-[130px] rounded-full bg-[#1fae19] px-6
+                  h-12 w-full max-w-[420px] rounded-full bg-[#1fae19] px-6
                   text-sm font-semibold text-white transition hover:bg-green-700
                 "
               >
                 Sign Up
+              </button>
+            </div>
+            <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:justify-center">
+              <button
+                onClick={handleLogin}
+                className="
+                  h-9 min-w-[140px] rounded-full bg-[#41a7ff] px-6
+                  text-sm font-semibold text-white transition hover:bg-blue-600
+                "
+              >
+                Log In
               </button>
             </div>
           </div>
