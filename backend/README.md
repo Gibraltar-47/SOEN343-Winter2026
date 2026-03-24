@@ -1,4 +1,4 @@
-# Backend Setup
+# FastAPI Setup
 
 FastAPI backend for SUMMS.
 
