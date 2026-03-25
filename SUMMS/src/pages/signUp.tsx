@@ -2,6 +2,7 @@ import { useState } from "react";
 import imgLogo from "../assets/logo.png";
 import imgAdminLogo from "../assets/adminLogo.png";
 import { useNavigate } from "react-router-dom";
+import Client from "../types";
 
 type SignUpProps = {
   onLogin?: () => void;
@@ -40,7 +41,7 @@ function InputField({
   );
 }
 
-export default function Login({
+export default function SignUp({
   onLogin,
   onSignUp,
 }: SignUpProps) {

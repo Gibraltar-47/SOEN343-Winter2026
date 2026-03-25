@@ -2,9 +2,9 @@ import { useState } from "react";
 import imgLogo from "../assets/logo.png";
 import imgAdminLogo from "../assets/adminLogo.png";
 import { useNavigate } from "react-router-dom";
+import Client from "../types";
 
-
-type SignUpProps = {
+type LoginProps = {
   onLogin?: () => void;
   onSignUp?: (email: string, password: string) => void;
 };
@@ -56,7 +56,7 @@ export default function Login({
 
     if (emailAlreadyExists) {
       alert("Login successful!");
-      navigate("/signup");
+      navigate("/home");
       return;
     }
     alert("Invalid email or password. Please try again.");
@@ -64,7 +64,7 @@ export default function Login({
 
   const handleSignUp = () => {
     if (onSignUp) {
-      onSignUp();
+      onSignUp(email,password);
       return;
     }
 
