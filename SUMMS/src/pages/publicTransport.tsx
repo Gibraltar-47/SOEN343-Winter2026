@@ -10,7 +10,7 @@ const FEATURES = [
       </svg>
     ),
     label: "Bus",
-    desc: "City-wide bus routes with live arrival times.",
+    desc: "Bus routes with live arrival times.",
   },
   {
     icon: (
@@ -28,7 +28,7 @@ const FEATURES = [
       </svg>
     ),
     label: "Metro",
-    desc: "Underground metro lines, platforms and capacity.",
+    desc: "View metro lines, platforms and capacity.",
   },
   {
     icon: (
@@ -46,7 +46,7 @@ export default function PublicTransport() {
 
   return (
     <div className="min-h-screen w-full bg-[#f3f3f3] overflow-hidden">
-      <div className="flex min-h-screen flex-col">
+      <div className="flex flex-col">
 
    
         <header className="flex h-[72px] items-center justify-between bg-[#76c573] px-4 shadow-[0px_4px_25px_rgba(0,0,0,0.18)] sm:px-6">

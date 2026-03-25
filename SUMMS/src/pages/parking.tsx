@@ -27,8 +27,8 @@ export default function Parking() {
   const navigate = useNavigate();
 
   return (
-    <div className="min-h-screen w-full bg-[#f3f3f3] overflow-hidden">
-      <div className="flex min-h-screen flex-col">
+    <div className="min-h-screen w-full bg-[#f3f3f3] ">
+      <div className="flex flex-col">
 
         
         <header className="flex h-[72px] items-center justify-between bg-[#76c573] px-4 shadow-[0px_4px_25px_rgba(0,0,0,0.18)] sm:px-6">
@@ -74,7 +74,7 @@ export default function Parking() {
                 Parking Reservations
               </h1>
               <p className="text-center text-gray-500 text-sm max-w-sm">
-                Find, reserve  and pay for parking across Montreal and Laval
+                Find, reserve and pay for parking across Montreal and Laval
               </p>
             </div>
 
