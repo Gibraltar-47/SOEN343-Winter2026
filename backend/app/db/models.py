@@ -106,4 +106,4 @@ class Location(Base):
     latitude = Column(Float, nullable=True)
     longitude = Column(Float, nullable=True)
 
-    vehicles = relationship("Vehicle", back_populates="location")#
+    vehicles = relationship("Vehicle", back_populates="location")
