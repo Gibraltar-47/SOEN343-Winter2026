@@ -42,9 +42,12 @@ const Home: React.FC = () => {
         <div className="relative z-10">
           <h2 className="text-5xl font-bold text-[#297525] mb-4">Welcome to SUMMS</h2>
           <p className="text-xl text-gray-500 mb-8">Streamline, Unify, Manage, Monitor, and Succeed</p>
-          <button className="bg-[#1fae19] text-white px-8 py-3 rounded-full font-semibold hover:bg-[#165713] transition shadow">
-            Get Started
-          </button>
+          <button
+      onClick={() => navigate('/vehicle-search')}
+      className="bg-[#1fae19] text-white px-8 py-3 rounded-full font-semibold hover:bg-[#165713] transition shadow"
+    >
+      Get Started
+    </button>
         </div>
       </section>
 
