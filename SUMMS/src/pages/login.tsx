@@ -41,25 +41,13 @@ function InputField({
   );
 }
 
-export default function Login({
-  onLogin,
-  onSignUp,
-}: LoginProps) {
+export default function Login({ onLogin, onSignUp }: LoginProps) {
   const navigate = useNavigate();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
 
   const handleLogin = () => {
-<<<<<<< HEAD
-    const existingClients: Client[] = JSON.parse(
-      localStorage.getItem("clients") || "[]"
-    );
-
-    const matchedClient = existingClients.find(
-      (client) =>
-        client.email.toLowerCase() === email.toLowerCase() &&
-        client.password === password
-    );
+    const matchedClient: Client | null = loginClient(email, password);
 
     if (!matchedClient) {
       alert("Invalid email or password. Please try again.");
@@ -79,24 +67,28 @@ export default function Login({
 >>>>>>> 8ee3de5 (adding design patterns and analytics feature)
 
     alert("Login successful!");
-
     localStorage.setItem("currentUser", JSON.stringify(matchedClient));
 
+    if (onLogin) {
+      onLogin();
+    }
+
     if (matchedClient.role === "admin") {
-      navigate("/admin-dashboard"); //SHOULD CHANGE TO CORRECT ROUTE!!!
+      navigate("/admin-dashboard");
     } else if (matchedClient.role === "provider") {
       navigate("/provider");
     } else {
       navigate("/home");
     }
   };
-    const handleSignUp = () => {
+
+  const handleSignUp = () => {
     if (onSignUp) {
       onSignUp(email, password);
       return;
     }
 
-    navigate("/signUp");
+    navigate("/signup");
   };
 
   return (
@@ -161,7 +153,6 @@ export default function Login({
               />
             </div>
 
-
             <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:justify-center">
               <button
                 onClick={handleLogin}
@@ -173,6 +164,7 @@ export default function Login({
                 Log In
               </button>
             </div>
+
             <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:justify-center">
               <button
                 onClick={handleSignUp}

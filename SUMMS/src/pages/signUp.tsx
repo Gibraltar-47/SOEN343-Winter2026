@@ -2,7 +2,6 @@ import { useState } from "react";
 import imgLogo from "../assets/logo.png";
 import imgAdminLogo from "../assets/adminLogo.png";
 import { useNavigate } from "react-router-dom";
-import Client from "../types";
 import { registerClient } from "../services/userService";
 
 type SignUpProps = {
@@ -42,10 +41,7 @@ function InputField({
   );
 }
 
-export default function SignUp({
-  onLogin,
-  onSignUp,
-}: SignUpProps) {
+export default function SignUp({ onLogin, onSignUp }: SignUpProps) {
   const navigate = useNavigate();
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
@@ -61,15 +57,31 @@ export default function SignUp({
     navigate("/");
   };
 
-const handleSignUp = () => {
-  const result = registerClient(firstName, lastName, email, password);
+  const handleSignUp = () => {
+    if (!firstName || !lastName || !email || !password) {
+      alert("Please fill in all fields.");
+      return;
+    }
 
-  alert(result.message);
+    if (onSignUp) {
+      onSignUp(firstName, lastName, email, password);
+      return;
+    }
 
-  if (result.success) {
-    navigate("/");
-  }
-};
+    const result = registerClient(
+      firstName,
+      lastName,
+      email,
+      password,
+      "provider"
+    );
+
+    alert(result.message);
+
+    if (result.success) {
+      navigate("/");
+    }
+  };
 
   return (
     <div className="min-h-screen w-full bg-[#f3f3f3] overflow-hidden">
@@ -158,6 +170,7 @@ const handleSignUp = () => {
                 Sign Up
               </button>
             </div>
+
             <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:justify-center">
               <button
                 onClick={handleLogin}
