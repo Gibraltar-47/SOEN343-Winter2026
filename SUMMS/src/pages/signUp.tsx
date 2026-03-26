@@ -2,7 +2,7 @@ import { useState } from "react";
 import imgLogo from "../assets/logo.png";
 import imgAdminLogo from "../assets/adminLogo.png";
 import { useNavigate } from "react-router-dom";
-import Client from "../types";
+import type Client from "../types/user";
 
 type SignUpProps = {
   onLogin?: () => void;
@@ -61,11 +61,20 @@ export default function SignUp({
   };
 
   const handleSignUp = () => {
+    let role: Client["role"] = "user";
+
+    if (email.toLowerCase().includes("@admin")) {
+      role = "admin";
+    } else if (email.toLowerCase().includes("@provider")) {
+      role = "provider";
+    }
+
     const newClient: Client = {
       firstName,
       lastName,
       email,
       password,
+      role,
     };
 
     const existingClients: Client[] = JSON.parse(

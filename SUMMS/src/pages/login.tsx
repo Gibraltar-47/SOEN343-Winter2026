@@ -2,7 +2,7 @@ import { useState } from "react";
 import imgLogo from "../assets/logo.png";
 import imgAdminLogo from "../assets/adminLogo.png";
 import { useNavigate } from "react-router-dom";
-import Client from "../types";
+import type Client from "../types/user";
 
 type LoginProps = {
   onLogin?: () => void;
@@ -45,31 +45,40 @@ export default function Login({
   const [password, setPassword] = useState("");
 
   const handleLogin = () => {
-
     const existingClients: Client[] = JSON.parse(
       localStorage.getItem("clients") || "[]"
     );
 
-    const emailAlreadyExists = existingClients.some(
-      (client) => client.email.toLowerCase() === email.toLowerCase()
+    const matchedClient = existingClients.find(
+      (client) =>
+        client.email.toLowerCase() === email.toLowerCase() &&
+        client.password === password
     );
 
-    if (emailAlreadyExists) {
-      alert("Login successful!");
-      navigate("/home");
+    if (!matchedClient) {
+      alert("Invalid email or password. Please try again.");
       return;
     }
-    alert("Invalid email or password. Please try again.");
-  };
 
-  const handleSignUp = () => {
+    alert("Login successful!");
+
+    localStorage.setItem("currentUser", JSON.stringify(matchedClient));
+
+    if (matchedClient.role === "admin") {
+      navigate("/admin-dashboard"); //SHOULD CHANGE TO CORRECT ROUTE!!!
+    } else if (matchedClient.role === "provider") {
+      navigate("/provider");
+    } else {
+      navigate("/home");
+    }
+  };
+    const handleSignUp = () => {
     if (onSignUp) {
-      onSignUp(email,password);
+      onSignUp(email, password);
       return;
     }
 
     navigate("/signUp");
-    console.log("Navigate to sign up");
   };
 
   return (
