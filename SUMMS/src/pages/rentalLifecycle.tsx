@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import imgLogo from '../assets/logo.png';
 import imgAdminLogo from '../assets/adminLogo.png';
+import { rentalService } from "../services/rentalService";
 
 type RentalState = {
   vehicleId: string;
@@ -27,10 +28,9 @@ const timelineSteps = [
 
 export default function RentalLifecycle() {
   const navigate = useNavigate();
-  const [rental, setRental] = useState<RentalState | null>(() => {
-    const saved = localStorage.getItem('currentRental');
-    return saved ? JSON.parse(saved) : null;
-  });
+  const [rental, setRental] = useState<RentalState | null>(() =>
+    rentalService.getCurrentRental()
+  );
 
   const currentStepIndex = useMemo(() => {
     if (!rental) return 0;
@@ -39,14 +39,7 @@ export default function RentalLifecycle() {
     return 5;
   }, [rental]);
 
-  const updateRental = (next: RentalState | null) => {
-    setRental(next);
-    if (next) {
-      localStorage.setItem('currentRental', JSON.stringify(next));
-    } else {
-      localStorage.removeItem('currentRental');
-    }
-  };
+
 
   if (!rental) {
     return (
@@ -63,15 +56,16 @@ export default function RentalLifecycle() {
   }
 
   const startRental = () => {
-    updateRental({ ...rental, status: 'active' });
+    setRental(rentalService.startRental());
   };
 
   const endRental = () => {
-    updateRental({ ...rental, status: 'completed' });
+    setRental(rentalService.endRental());
   };
 
   const clearRental = () => {
-    updateRental(null);
+    rentalService.clearRental();
+    setRental(null);
     navigate('/vehicles');
   };
 

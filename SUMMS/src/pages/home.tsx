@@ -2,9 +2,16 @@ import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import imgLogo from "../assets/logo.png";
 import imgAdminLogo from "../assets/adminLogo.png";
+import { getAnalytics } from "../services/analyticsService";
 
 const Home: React.FC = () => {
   const navigate = useNavigate();
+  const analytics = getAnalytics() || {
+  activeRentals: 0,
+  completedRentals: 0,
+  paymentAttempts: 0,
+  successfulPayments: 0,
+};
 
   return (
     <div className="min-h-screen w-full bg-[#f3f3f3]">
@@ -48,6 +55,45 @@ const Home: React.FC = () => {
     >
       Get Started
     </button>
+        </div>
+      </section>
+
+      {/* Analytics Section */}
+      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+        <h3 className="text-3xl font-bold text-[#297525] mb-8 text-center">
+          System Analytics
+        </h3>
+
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+
+          <div className="rounded-[24px] p-6 bg-white shadow text-center">
+            <p className="text-sm text-gray-500">Active Rentals</p>
+            <p className="text-2xl font-bold text-[#165713]">
+              {analytics.activeRentals}
+            </p>
+          </div>
+
+          <div className="rounded-[24px] p-6 bg-white shadow text-center">
+            <p className="text-sm text-gray-500">Completed Rentals</p>
+            <p className="text-2xl font-bold text-[#165713]">
+              {analytics.completedRentals}
+            </p>
+          </div>
+
+          <div className="rounded-[24px] p-6 bg-white shadow text-center">
+            <p className="text-sm text-gray-500">Payment Attempts</p>
+            <p className="text-2xl font-bold text-[#165713]">
+              {analytics.paymentAttempts}
+            </p>
+          </div>
+
+          <div className="rounded-[24px] p-6 bg-white shadow text-center">
+            <p className="text-sm text-gray-500">Successful Payments</p>
+            <p className="text-2xl font-bold text-[#165713]">
+              {analytics.successfulPayments}
+            </p>
+          </div>
+
         </div>
       </section>
 

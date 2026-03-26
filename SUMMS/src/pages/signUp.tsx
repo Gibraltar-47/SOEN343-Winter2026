@@ -2,7 +2,8 @@ import { useState } from "react";
 import imgLogo from "../assets/logo.png";
 import imgAdminLogo from "../assets/adminLogo.png";
 import { useNavigate } from "react-router-dom";
-import type Client from "../types/user";
+import Client from "../types";
+import { registerClient } from "../services/userService";
 
 type SignUpProps = {
   onLogin?: () => void;
@@ -60,44 +61,15 @@ export default function SignUp({
     navigate("/");
   };
 
-  const handleSignUp = () => {
-    let role: Client["role"] = "user";
+const handleSignUp = () => {
+  const result = registerClient(firstName, lastName, email, password);
 
-    if (email.toLowerCase().includes("@admin")) {
-      role = "admin";
-    } else if (email.toLowerCase().includes("@provider")) {
-      role = "provider";
-    }
+  alert(result.message);
 
-    const newClient: Client = {
-      firstName,
-      lastName,
-      email,
-      password,
-      role,
-    };
-
-    const existingClients: Client[] = JSON.parse(
-      localStorage.getItem("clients") || "[]"
-    );
-
-    const emailAlreadyExists = existingClients.some(
-      (client) => client.email.toLowerCase() === email.toLowerCase()
-    );
-
-    if (emailAlreadyExists) {
-      alert("A client with this email already exists.");
-      return;
-    }
-
-    existingClients.push(newClient);
-    localStorage.setItem("clients", JSON.stringify(existingClients));
-
-    console.log("Saved clients:", existingClients);
-    alert("Sign up successful!");
-
+  if (result.success) {
     navigate("/");
-  };
+  }
+};
 
   return (
     <div className="min-h-screen w-full bg-[#f3f3f3] overflow-hidden">
