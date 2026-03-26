@@ -2,7 +2,7 @@ import { useState } from "react";
 import imgLogo from "../assets/logo.png";
 import imgAdminLogo from "../assets/adminLogo.png";
 import { useNavigate } from "react-router-dom";
-import type Client from "../types/user";
+import { registerClient } from "../services/userService";
 
 type SignUpProps = {
   onLogin?: () => void;
@@ -41,10 +41,7 @@ function InputField({
   );
 }
 
-export default function SignUp({
-  onLogin,
-  onSignUp,
-}: SignUpProps) {
+export default function SignUp({ onLogin, onSignUp }: SignUpProps) {
   const navigate = useNavigate();
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
@@ -61,42 +58,29 @@ export default function SignUp({
   };
 
   const handleSignUp = () => {
-    let role: Client["role"] = "user";
-
-    if (email.toLowerCase().includes("@admin")) {
-      role = "admin";
-    } else if (email.toLowerCase().includes("@provider")) {
-      role = "provider";
+    if (!firstName || !lastName || !email || !password) {
+      alert("Please fill in all fields.");
+      return;
     }
 
-    const newClient: Client = {
+    if (onSignUp) {
+      onSignUp(firstName, lastName, email, password);
+      return;
+    }
+
+    const result = registerClient(
       firstName,
       lastName,
       email,
       password,
-      role,
-    };
-
-    const existingClients: Client[] = JSON.parse(
-      localStorage.getItem("clients") || "[]"
+      "provider"
     );
 
-    const emailAlreadyExists = existingClients.some(
-      (client) => client.email.toLowerCase() === email.toLowerCase()
-    );
+    alert(result.message);
 
-    if (emailAlreadyExists) {
-      alert("A client with this email already exists.");
-      return;
+    if (result.success) {
+      navigate("/");
     }
-
-    existingClients.push(newClient);
-    localStorage.setItem("clients", JSON.stringify(existingClients));
-
-    console.log("Saved clients:", existingClients);
-    alert("Sign up successful!");
-
-    navigate("/");
   };
 
   return (
@@ -186,6 +170,7 @@ export default function SignUp({
                 Sign Up
               </button>
             </div>
+
             <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:justify-center">
               <button
                 onClick={handleLogin}
