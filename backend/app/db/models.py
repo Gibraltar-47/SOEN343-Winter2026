@@ -33,12 +33,12 @@ class PaymentStatus(str, enum.Enum):
 class User(Base):
     __tablename__ = "users"
 
-    id = Column(Integer, primary_key=True, index=True)
-    name = Column(String, nullable=False)
-    email = Column(String, unique=True, index=True, nullable=False)
-    password_hash = Column(String, nullable=False)
-    role = Column(Enum(UserRole), nullable=False)
-    created_at = Column(DateTime, default=datetime.datetime.utcnow)
+    id:            Mapped[int]               = mapped_column(primary_key=True, index=True)
+    name:          Mapped[str]               = mapped_column(nullable=False)
+    email:         Mapped[str]               = mapped_column(unique=True, index=True, nullable=False)
+    password_hash: Mapped[str]               = mapped_column(nullable=False)
+    role:          Mapped[UserRole]          = mapped_column(Enum(UserRole))
+    created_at:    Mapped[datetime.datetime] = mapped_column(default= lambda: datetime.datetime.now(datetime.timezone.utc))
 
     reservations  = relationship("Reservation", back_populates="user")
     vehicles      = relationship("Vehicle", back_populates="provider") 
@@ -49,15 +49,14 @@ class User(Base):
 class Vehicle(Base):
     __tablename__ = "vehicles"
 
-    id = Column(Integer, primary_key=True, index=True)
-    provider_id = Column(Integer, ForeignKey("users.id"), nullable=False)
-    location_id = Column(Integer, ForeignKey("locations.id"), nullable=False)
-    type = Column(Enum(VehicleType), nullable=False)
-    model = Column(String, nullable=False)
-    status = Column(Enum(VehicleStatus), nullable=False)
-    price_per_hour = Column(Float, nullable=False)
-    created_at = Column(DateTime, default=datetime.datetime.utcnow)
-    
+    id:            Mapped[int]              = mapped_column(primary_key=True, index=True)
+    provider_id:   Mapped[int]              = mapped_column(ForeignKey("users.id"))
+    location_id:   Mapped[int]              = mapped_column(ForeignKey("locations.id"))
+    type:          Mapped[VehicleType]      = mapped_column(Enum(VehicleType))
+    model:         Mapped[str]              = mapped_column(nullable=False)
+    status:        Mapped[VehicleStatus]    = mapped_column(Enum(VehicleStatus))
+    price_per_hour:Mapped[float]            = mapped_column(nullable=False)
+    created_at:    Mapped[datetime.datetime]= mapped_column(default= lambda: datetime.datetime.now(datetime.timezone.utc))
 
     provider      = relationship("User", back_populates="vehicles")
     location      = relationship("Location", back_populates="vehicles")
@@ -67,14 +66,14 @@ class Vehicle(Base):
 class Reservation(Base):
     __tablename__ = "reservations"
 
-    id = Column(Integer, primary_key=True, index=True)
-    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
-    vehicle_id = Column(Integer, ForeignKey("vehicles.id"), nullable=False)
-    start_time = Column(DateTime, nullable=False)
-    end_time = Column(DateTime)
-    status = Column(Enum(BookingStatus), nullable=False)
-    total_cost = Column(Float)
-    created_at = Column(DateTime, default=datetime.datetime.utcnow)
+    id:         Mapped[int]                    = mapped_column(primary_key=True, index=True)
+    user_id:    Mapped[int]                    = mapped_column(ForeignKey("users.id"))
+    vehicle_id: Mapped[int]                    = mapped_column(ForeignKey("vehicles.id"))
+    start_time: Mapped[datetime.datetime]      = mapped_column(nullable=False)
+    end_time:   Mapped[datetime.datetime|None] = mapped_column(default=None)
+    status:     Mapped[BookingStatus]          = mapped_column(Enum(BookingStatus))
+    total_cost: Mapped[float|None]             = mapped_column(default=None)
+    created_at: Mapped[datetime.datetime]      = mapped_column(default= lambda: datetime.datetime.now(datetime.timezone.utc))
 
     user     = relationship("User", back_populates="reservations")
     vehicle  = relationship("Vehicle", back_populates="reservations")
@@ -91,7 +90,7 @@ class Payment(Base):
     amount:         Mapped[float]             = mapped_column(nullable=False)
     status:         Mapped[PaymentStatus]     = mapped_column(Enum(PaymentStatus), default=PaymentStatus.pending)
     payment_method: Mapped[str | None]        = mapped_column(default=None)
-    created_at:     Mapped[datetime.datetime] = mapped_column(default=datetime.datetime.utcnow)
+    created_at:     Mapped[datetime.datetime] = mapped_column(default= lambda: datetime.datetime.now(datetime.timezone.utc))
 
     reservation: Mapped["Reservation"] = relationship(back_populates="payment")
 
@@ -100,10 +99,10 @@ class Payment(Base):
 class Location(Base):
     __tablename__ = "locations"
 
-    id = Column(Integer, primary_key=True, index=True)
-    address = Column(String, nullable=False)
-    city = Column(String, nullable=False)
-    latitude = Column(Float, nullable=True)
-    longitude = Column(Float, nullable=True)
+    id:             Mapped[int]                = mapped_column(primary_key=True, index=True)
+    address:        Mapped[str]                = mapped_column(nullable=False)
+    city:           Mapped[str]                = mapped_column(nullable=False)
+    latitude:       Mapped[float]              = mapped_column(nullable=True)
+    longitude:      Mapped[float]              = mapped_column(nullable=True)
 
     vehicles = relationship("Vehicle", back_populates="location")
