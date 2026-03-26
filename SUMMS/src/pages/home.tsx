@@ -78,11 +78,11 @@ const Home: React.FC = () => {
 
   
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
-        <h3 className="text-3xl font-bold text-[#297525] mb-4 text-center">Our Services</h3>
+        <h3 className="text-3xl font-bold text-[#297525] mb-4 text-center">Other Services</h3>
         <p className="text-center text-gray-500 mb-10">
-          Access mobility services available on one the platform.
+          Access additional mobility services available on the platform.
         </p>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-5xl mx-auto">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-2xl mx-auto">
 
          
           <button
@@ -126,31 +126,7 @@ const Home: React.FC = () => {
             </div>
             <div>
               <p className="font-semibold text-[#297525]">Public Transport</p>
-              <p className="text-sm text-gray-500"> Access bus, tram, metro and train schedules</p>
-            </div>
-            <svg viewBox="0 0 24 24" className="h-5 w-5 text-gray-300 ml-auto shrink-0" fill="currentColor">
-              <path d="M8.59 16.59L13.17 12 8.59 7.41 10 6l6 6-6 6-1.41-1.41z" />
-            </svg>
-          </button>
-
-           <button
-            onClick={() => navigate('/vehicle-search')}
-            className="
-              flex items-center gap-4 p-6 text-left
-              rounded-[24px] border-2 border-white/80
-              bg-[linear-gradient(147deg,rgba(223,223,223,0.69)_2.7%,rgba(245,245,245,0.96)_75.2%,rgba(255,255,255,0.41)_98.8%)]
-              shadow-[0px_4px_20px_rgba(0,0,0,0.08)] backdrop-blur-[6px]
-              hover:shadow-[0px_6px_28px_rgba(0,0,0,0.13)] hover:-translate-y-0.5 transition-all
-            "
-          >
-            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-[#76c573] text-white">
-              <svg viewBox="0 0 24 24" className="h-6 w-6" fill="currentColor">
-                <path d="M13 3H6v18h4v-6h3c3.31 0 6-2.69 6-6s-2.69-6-6-6zm.2 8H10V7h3.2c1.1 0 2 .9 2 2s-.9 2-2 2z" />
-              </svg>
-            </div>
-            <div>
-              <p className="font-semibold text-[#297525]">Vehicle Search</p>
-              <p className="text-sm text-gray-500">Locate, reserve and pay for vehicles</p>
+              <p className="text-sm text-gray-500">Bus, tram, metro and train schedules</p>
             </div>
             <svg viewBox="0 0 24 24" className="h-5 w-5 text-gray-300 ml-auto shrink-0" fill="currentColor">
               <path d="M8.59 16.59L13.17 12 8.59 7.41 10 6l6 6-6 6-1.41-1.41z" />
