@@ -3,6 +3,7 @@ import imgLogo from "../assets/logo.png";
 import imgAdminLogo from "../assets/adminLogo.png";
 import { useNavigate } from "react-router-dom";
 import Client from "../types";
+import { registerClient } from "../services/userService";
 
 type SignUpProps = {
   onLogin?: () => void;
@@ -60,35 +61,15 @@ export default function SignUp({
     navigate("/");
   };
 
-  const handleSignUp = () => {
-    const newClient: Client = {
-      firstName,
-      lastName,
-      email,
-      password,
-    };
+const handleSignUp = () => {
+  const result = registerClient(firstName, lastName, email, password);
 
-    const existingClients: Client[] = JSON.parse(
-      localStorage.getItem("clients") || "[]"
-    );
+  alert(result.message);
 
-    const emailAlreadyExists = existingClients.some(
-      (client) => client.email.toLowerCase() === email.toLowerCase()
-    );
-
-    if (emailAlreadyExists) {
-      alert("A client with this email already exists.");
-      return;
-    }
-
-    existingClients.push(newClient);
-    localStorage.setItem("clients", JSON.stringify(existingClients));
-
-    console.log("Saved clients:", existingClients);
-    alert("Sign up successful!");
-
+  if (result.success) {
     navigate("/");
-  };
+  }
+};
 
   return (
     <div className="min-h-screen w-full bg-[#f3f3f3] overflow-hidden">

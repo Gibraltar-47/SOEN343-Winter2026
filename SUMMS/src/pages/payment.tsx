@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import imgLogo from '../assets/logo.png';
 import imgAdminLogo from '../assets/adminLogo.png';
+import { paymentService } from "../services/paymentService";
 
 type ReservationState = {
   vehicleId: string;
@@ -36,15 +37,12 @@ export default function Payment() {
   }
 
   const handleConfirmPayment = () => {
-    const rental = {
-      ...reservation,
+    paymentService.processReservationPayment(
+      reservation,
       paymentMethod,
-      total,
-      status: 'reserved',
-      reservedAt: new Date().toISOString(),
-    };
+      3
+    );
 
-    localStorage.setItem('currentRental', JSON.stringify(rental));
     navigate('/rental-lifecycle');
   };
 

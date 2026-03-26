@@ -3,6 +3,7 @@ import imgLogo from "../assets/logo.png";
 import imgAdminLogo from "../assets/adminLogo.png";
 import { useNavigate } from "react-router-dom";
 import Client from "../types";
+import { loginClient } from "../services/userService";
 
 type LoginProps = {
   onLogin?: () => void;
@@ -45,20 +46,14 @@ export default function Login({
   const [password, setPassword] = useState("");
 
   const handleLogin = () => {
+    const exists = loginClient(email);
 
-    const existingClients: Client[] = JSON.parse(
-      localStorage.getItem("clients") || "[]"
-    );
-
-    const emailAlreadyExists = existingClients.some(
-      (client) => client.email.toLowerCase() === email.toLowerCase()
-    );
-
-    if (emailAlreadyExists) {
+    if (exists) {
       alert("Login successful!");
       navigate("/home");
       return;
     }
+
     alert("Invalid email or password. Please try again.");
   };
 
