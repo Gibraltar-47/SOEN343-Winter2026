@@ -8,6 +8,7 @@ import {
   getTransitStops,
   type Departure,
 } from "../services/publicTransportService";
+import { transitDataSource } from "../data/publicTransport";
 
 const FEATURES = [
   {
@@ -168,7 +169,7 @@ export default function PublicTransport() {
                 Public Transport
               </h1>
               <p className="text-center text-gray-500 text-sm max-w-sm">
-                View upcoming local bus departures by stop and route.
+                View STM-inspired planned bus departures by stop and route.
               </p>
             </div>
 
@@ -208,6 +209,12 @@ export default function PublicTransport() {
                   ))}
                 </select>
               </div>
+
+              {stops.find((stop) => stop.id === selectedStopId) ? (
+                <p className="mt-3 text-xs text-gray-500">
+                  Stop code: {stops.find((stop) => stop.id === selectedStopId)?.stopCode}
+                </p>
+              ) : null}
 
               <p className="mt-3 text-xs text-gray-500">
                 Auto-refreshes every 30 seconds.
@@ -250,7 +257,9 @@ export default function PublicTransport() {
                         <p className="text-sm font-semibold text-[#297525]">
                           Route {departure.routeLabel} · {departure.destination}
                         </p>
-                        <p className="text-xs text-gray-500">Departs at {departure.departureTime}</p>
+                        <p className="text-xs text-gray-500">
+                          {departure.direction} · {departure.category} service · Departs at {departure.departureTime}
+                        </p>
                       </div>
                       <div className="text-right">
                         <p className="text-sm font-semibold text-[#165713]">
@@ -264,6 +273,10 @@ export default function PublicTransport() {
                   ))}
                 </div>
               )}
+
+              <p className="mt-4 text-xs text-gray-500">
+                Source: {transitDataSource.provider}. {transitDataSource.note}
+              </p>
             </div>
 
             <div className="grid grid-cols-2 gap-3 w-full">
