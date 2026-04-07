@@ -2,6 +2,7 @@ import {
   transitRoutes,
   transitStops,
   type TransitRoute,
+  type TransitServiceWindow,
   type TransitStop,
 } from "../data/publicTransport";
 
@@ -9,6 +10,8 @@ export type Departure = {
   routeId: string;
   routeLabel: string;
   destination: string;
+  direction: string;
+  category: TransitRoute["category"];
   departureTime: string;
   minutesAway: number;
   status: "Due" | "On Time" | "Scheduled";
@@ -33,41 +36,78 @@ function getStatus(minutesAway: number): Departure["status"] {
   return "Scheduled";
 }
 
+function toMinutesOfDay(value: string): number {
+  const [hours, minutes] = value.split(":").map(Number);
+  return hours * 60 + minutes;
+}
+
+function minutesOfDayFromDate(date: Date): number {
+  return date.getHours() * 60 + date.getMinutes();
+}
+
+function isWithinWindow(
+  currentMinutes: number,
+  window: TransitServiceWindow,
+): boolean {
+  const start = toMinutesOfDay(window.start);
+  const end = toMinutesOfDay(window.end);
+
+  if (start <= end) {
+    return currentMinutes >= start && currentMinutes <= end;
+  }
+
+  return currentMinutes >= start || currentMinutes <= end;
+}
+
+function isScheduledMinute(date: Date, window: TransitServiceWindow): boolean {
+  const start = toMinutesOfDay(window.start);
+  let current = minutesOfDayFromDate(date);
+
+  if (current < start) {
+    current += 24 * 60;
+  }
+
+  return (current - start) % window.headwayMinutes === 0;
+}
+
+function getWindowForDate(
+  date: Date,
+  route: TransitRoute,
+): TransitServiceWindow | undefined {
+  const currentMinutes = minutesOfDayFromDate(date);
+  return route.serviceWindows.find((window) => isWithinWindow(currentMinutes, window));
+}
+
 function buildDeparturesForRoute(route: TransitRoute, now: Date): Departure[] {
   const departures: Departure[] = [];
   const current = new Date(now);
+  const cursor = new Date(now);
+  cursor.setSeconds(0, 0);
 
-  const serviceStart = new Date(now);
-  serviceStart.setHours(route.firstDepartureHour, 0, 0, 0);
+  const maxLookAheadMinutes = 12 * 60;
+  let scanned = 0;
+  while (departures.length < 6 && scanned <= maxLookAheadMinutes) {
+    const activeWindow = getWindowForDate(cursor, route);
+    if (activeWindow && isScheduledMinute(cursor, activeWindow)) {
+      const minutesAway = Math.max(
+        0,
+        Math.round((cursor.getTime() - current.getTime()) / 60_000),
+      );
 
-  const serviceEnd = new Date(now);
-  serviceEnd.setHours(route.lastDepartureHour, 59, 59, 999);
+      departures.push({
+        routeId: route.id,
+        routeLabel: route.shortName,
+        destination: route.destination,
+        direction: route.directionOutbound,
+        category: route.category,
+        departureTime: formatTime(cursor),
+        minutesAway,
+        status: getStatus(minutesAway),
+      });
+    }
 
-  if (current > serviceEnd) {
-    return departures;
-  }
-
-  let cursor = new Date(serviceStart);
-  while (cursor < current) {
-    cursor = new Date(cursor.getTime() + route.headwayMinutes * 60_000);
-  }
-
-  for (let i = 0; i < 6 && cursor <= serviceEnd; i += 1) {
-    const minutesAway = Math.max(
-      0,
-      Math.round((cursor.getTime() - current.getTime()) / 60_000),
-    );
-
-    departures.push({
-      routeId: route.id,
-      routeLabel: route.shortName,
-      destination: route.destination,
-      departureTime: formatTime(cursor),
-      minutesAway,
-      status: getStatus(minutesAway),
-    });
-
-    cursor = new Date(cursor.getTime() + route.headwayMinutes * 60_000);
+    cursor.setMinutes(cursor.getMinutes() + 1);
+    scanned += 1;
   }
 
   return departures;
