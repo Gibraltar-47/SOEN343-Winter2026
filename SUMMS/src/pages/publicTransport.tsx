@@ -1,6 +1,14 @@
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import imgLogo from "../assets/logo.png";
 import imgAdminLogo from "../assets/adminLogo.png";
+import {
+  getNextDepartures,
+  getTransitRoutes,
+  getTransitStops,
+  type Departure,
+} from "../services/publicTransportService";
+import { transitDataSource } from "../data/publicTransport";
 
 const FEATURES = [
   {
@@ -43,6 +51,77 @@ const FEATURES = [
 
 export default function PublicTransport() {
   const navigate = useNavigate();
+  const [stopQuery, setStopQuery] = useState("");
+  const [selectedStopId, setSelectedStopId] = useState("stop-berri-uqam");
+  const [selectedRoute, setSelectedRoute] = useState<string>("all");
+  const [departures, setDepartures] = useState<Departure[]>([]);
+  const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
+
+  const stops = getTransitStops();
+  const routes = getTransitRoutes();
+
+  const filteredStops = useMemo(() => {
+    const normalizedQuery = stopQuery.trim().toLowerCase();
+    if (!normalizedQuery) {
+      return stops;
+    }
+
+    return stops.filter(
+      (stop) =>
+        stop.name.toLowerCase().includes(normalizedQuery) ||
+        stop.area.toLowerCase().includes(normalizedQuery),
+    );
+  }, [stopQuery, stops]);
+
+  const availableRoutes = useMemo(() => {
+    const stop = stops.find((candidate) => candidate.id === selectedStopId);
+    if (!stop) {
+      return [];
+    }
+
+    return routes.filter((route) => stop.routeIds.includes(route.id));
+  }, [routes, selectedStopId, stops]);
+
+  useEffect(() => {
+    if (filteredStops.length === 0) {
+      return;
+    }
+
+    const hasCurrentStop = filteredStops.some(
+      (stop) => stop.id === selectedStopId,
+    );
+
+    if (!hasCurrentStop) {
+      setSelectedStopId(filteredStops[0].id);
+    }
+  }, [filteredStops, selectedStopId]);
+
+  useEffect(() => {
+    if (selectedRoute !== "all") {
+      const isValid = availableRoutes.some((route) => route.id === selectedRoute);
+      if (!isValid) {
+        setSelectedRoute("all");
+      }
+    }
+  }, [availableRoutes, selectedRoute]);
+
+  useEffect(() => {
+    if (!selectedStopId) {
+      setDepartures([]);
+      return;
+    }
+
+    const refresh = () => {
+      const now = new Date();
+      setDepartures(getNextDepartures(selectedStopId, selectedRoute, now));
+      setLastUpdated(now);
+    };
+
+    refresh();
+
+    const intervalId = window.setInterval(refresh, 30_000);
+    return () => window.clearInterval(intervalId);
+  }, [selectedStopId, selectedRoute]);
 
   return (
     <div className="min-h-screen w-full bg-[#f3f3f3] overflow-hidden">
@@ -90,16 +169,116 @@ export default function PublicTransport() {
                 Public Transport
               </h1>
               <p className="text-center text-gray-500 text-sm max-w-sm">
-                Bus, REM, metro and train schedules all in one place.
+                View STM-inspired planned bus departures by stop and route.
               </p>
             </div>
 
-           
-            <div className="rounded-full bg-[#165713] px-6 py-2 text-sm font-semibold text-white tracking-wide shadow">
-               Coming Soon
+            <div className="w-full rounded-[24px] border-2 border-white/80 bg-[linear-gradient(147deg,rgba(223,223,223,0.69)_2.7%,rgba(245,245,245,0.96)_75.2%)] p-5 shadow-[0px_4px_20px_rgba(0,0,0,0.08)] backdrop-blur-[6px]">
+              <p className="text-sm font-semibold text-[#297525]">Find a stop</p>
+              <input
+                value={stopQuery}
+                onChange={(event) => setStopQuery(event.target.value)}
+                type="text"
+                placeholder="Search by stop name or area"
+                className="mt-3 h-11 w-full rounded-full border-2 border-white/80 bg-white/80 px-4 text-sm text-gray-700 outline-none focus:border-[#76c573]"
+              />
+
+              <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
+                <select
+                  value={selectedStopId}
+                  onChange={(event) => setSelectedStopId(event.target.value)}
+                  className="h-11 rounded-full border-2 border-white/80 bg-white/80 px-4 text-sm text-gray-700 outline-none focus:border-[#76c573]"
+                >
+                  {filteredStops.map((stop) => (
+                    <option key={stop.id} value={stop.id}>
+                      {stop.name} ({stop.area})
+                    </option>
+                  ))}
+                </select>
+
+                <select
+                  value={selectedRoute}
+                  onChange={(event) => setSelectedRoute(event.target.value)}
+                  className="h-11 rounded-full border-2 border-white/80 bg-white/80 px-4 text-sm text-gray-700 outline-none focus:border-[#76c573]"
+                >
+                  <option value="all">All routes</option>
+                  {availableRoutes.map((route) => (
+                    <option key={route.id} value={route.id}>
+                      Route {route.shortName} - {route.destination}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {stops.find((stop) => stop.id === selectedStopId) ? (
+                <p className="mt-3 text-xs text-gray-500">
+                  Stop code: {stops.find((stop) => stop.id === selectedStopId)?.stopCode}
+                </p>
+              ) : null}
+
+              <p className="mt-3 text-xs text-gray-500">
+                Auto-refreshes every 30 seconds.
+                {lastUpdated
+                  ? ` Last updated at ${lastUpdated.toLocaleTimeString([], {
+                      hour: "2-digit",
+                      minute: "2-digit",
+                    })}.`
+                  : ""}
+              </p>
             </div>
 
-            
+            <div className="w-full rounded-[24px] border-2 border-white/80 bg-[linear-gradient(147deg,rgba(223,223,223,0.69)_2.7%,rgba(245,245,245,0.96)_75.2%)] p-5 shadow-[0px_4px_20px_rgba(0,0,0,0.08)] backdrop-blur-[6px]">
+              <div className="flex items-center justify-between gap-3">
+                <h2 className="text-lg font-semibold text-[#297525]">Upcoming departures</h2>
+                <button
+                  onClick={() => {
+                    const now = new Date();
+                    setDepartures(getNextDepartures(selectedStopId, selectedRoute, now));
+                    setLastUpdated(now);
+                  }}
+                  className="rounded-full bg-[#165713] px-4 py-2 text-xs font-semibold text-white transition hover:bg-[#11440f]"
+                >
+                  Refresh
+                </button>
+              </div>
+
+              {departures.length === 0 ? (
+                <p className="mt-4 text-sm text-gray-500">
+                  No departures found for this selection right now.
+                </p>
+              ) : (
+                <div className="mt-4 space-y-3">
+                  {departures.map((departure, index) => (
+                    <div
+                      key={`${departure.routeId}-${departure.departureTime}-${index}`}
+                      className="flex items-center justify-between rounded-full border-2 border-white/80 bg-white/80 px-4 py-3"
+                    >
+                      <div>
+                        <p className="text-sm font-semibold text-[#297525]">
+                          Route {departure.routeLabel} · {departure.destination}
+                        </p>
+                        <p className="text-xs text-gray-500">
+                          {departure.direction} · {departure.category} service · Departs at {departure.departureTime}
+                        </p>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-sm font-semibold text-[#165713]">
+                          {departure.minutesAway <= 1
+                            ? "Due"
+                            : `${departure.minutesAway} min`}
+                        </p>
+                        <p className="text-xs text-gray-500">{departure.status}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              <p className="mt-4 text-xs text-gray-500">
+                Source: {transitDataSource.provider}. {transitDataSource.note}
+              </p>
+            </div>
+
             <div className="grid grid-cols-2 gap-3 w-full">
               {FEATURES.map((f) => (
                 <div
@@ -119,8 +298,6 @@ export default function PublicTransport() {
                 </div>
               ))}
             </div>
-
-           
           </div>
         </main>
       </div>
