@@ -93,7 +93,8 @@ class PaymentService implements Subject {
       reservedAt: new Date().toISOString(),
     };
 
-    localStorage.setItem("currentRental", JSON.stringify(rental));
+    const rentals = getStoredRentals();
+    saveStoredRentals([...rentals, rental]);
     return rental;
   }
 }

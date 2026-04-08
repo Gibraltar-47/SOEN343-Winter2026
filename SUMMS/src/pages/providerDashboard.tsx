@@ -67,6 +67,24 @@ export default function ProviderDashboard() {
                     Edit or remove vehicles from the current fleet.
                   </p>
                 </button>
+                <button
+                  onClick={() => navigate("/provider/rentals")}
+                  className="rounded-full border-2 border-white/80 bg-white/70 px-6 py-4 text-left shadow-[0px_4px_16px_rgba(0,0,0,0.08)] transition hover:scale-[1.01]"
+                >
+                  <p className="text-base font-semibold text-[#297525]">Manage Rentals</p>
+                  <p className="text-sm text-gray-400">
+                    View reservations and manage their current status.
+                  </p>
+                </button>
+                <button
+                  onClick={() => navigate("/provider/profit")}
+                  className="rounded-full border-2 border-white/80 bg-white/70 px-6 py-4 text-left shadow-[0px_4px_16px_rgba(0,0,0,0.08)] transition hover:scale-[1.01]"
+                >
+                  <p className="text-base font-semibold text-[#297525]">View Profit</p>
+                  <p className="text-sm text-gray-400">
+                    See total revenue earned from your rentals.
+                  </p>
+                </button>
               </div>
             </div>
           </div>

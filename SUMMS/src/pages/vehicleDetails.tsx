@@ -160,7 +160,20 @@ export default function VehicleDetails() {
               </button>
 
               <button
-                onClick={() => navigate('/payment', { state: { vehicle } })}
+                onClick={() => 
+                  navigate('/payment', {
+                    state: { 
+                      vehicleId: vehicle.id,
+                      vehicleName: vehicle.name,
+                      city: vehicle.city,
+                      region: vehicle.region,
+                      pricePerHour: vehicle.pricePerHour,
+                      providerId: vehicle.providerId,
+                      providerName: vehicle.providerName ?? vehicle.provider,
+                      type: vehicle.type,
+                    },
+                  })
+                }
                 className="rounded-full bg-[#1fae19] px-6 py-3 text-sm font-semibold text-white transition hover:bg-green-700"
               >
                 Reserve Vehicle

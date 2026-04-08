@@ -11,6 +11,10 @@ import RentalLifecycle from './pages/rentalLifecycle';
 import ProviderDashboard from "./pages/providerDashboard";
 import AddVehicle from "./pages/addVehicle";
 import ManageVehicles from "./pages/manageVehicles";
+import ManageRentals from "./pages/manageRentals";
+import UserDashboard from "./pages/userDashboard";
+import ManageMyRentals from "./pages/manageMyRentals";
+import ProviderProfit from "./pages/providerProfit";
 
 export default function App() {
   return (
@@ -27,6 +31,10 @@ export default function App() {
       <Route path="/provider" element={<ProviderDashboard />} />
       <Route path="/provider/add-vehicle" element={<AddVehicle />} />
       <Route path="/provider/vehicles" element={<ManageVehicles />} />
+      <Route path="/provider/rentals" element={<ManageRentals />} />
+      <Route path="/user" element={<UserDashboard />} />
+      <Route path="/my-rentals" element={<ManageMyRentals />} />
+      <Route path="/provider/profit" element={<ProviderProfit />} />
     </Routes>
   );
 }

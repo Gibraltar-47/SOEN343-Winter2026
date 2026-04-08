@@ -55,7 +55,7 @@ export default function Payment() {
       3
     );
 
-    navigate('/rental-lifecycle');
+    navigate('/home');
   };
 
   return (
