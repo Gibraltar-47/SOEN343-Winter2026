@@ -2,7 +2,8 @@ import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import imgLogo from '../assets/logo.png';
 import imgAdminLogo from '../assets/adminLogo.png';
-import { cities, vehicles, vehicleTypes } from '../data/vehicles';
+import { vehicleTypes } from '../data/vehicles';
+import { getAllVehicles } from '../services/providerVehicleService';
 
 function SearchField({ label, children }: { label: string; children: React.ReactNode }) {
   return (
@@ -27,8 +28,14 @@ export default function VehicleSearch() {
   const [minPrice, setMinPrice] = useState('');
   const [maxPrice, setMaxPrice] = useState('');
 
+  const allVehicles = useMemo(() => getAllVehicles(), []);
+  const cities = useMemo(
+    () => Array.from(new Set(allVehicles.map((vehicle) => vehicle.city))),
+    [allVehicles],
+  );
+
   const filteredVehicles = useMemo(() => {
-    return vehicles
+    return allVehicles
       .filter((vehicle) => (selectedType ? vehicle.type === selectedType : true))
       .filter((vehicle) => (selectedCity ? vehicle.city === selectedCity : true))
       .filter((vehicle) => (minPrice ? vehicle.pricePerHour >= Number(minPrice) : true))

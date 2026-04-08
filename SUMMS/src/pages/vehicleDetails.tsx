@@ -2,7 +2,7 @@ import React from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import imgLogo from '../assets/logo.png';
 import imgAdminLogo from '../assets/adminLogo.png';
-import { vehicles } from '../data/vehicles';
+import { getAllVehicles } from '../services/providerVehicleService';
 
 export default function VehicleDetails() {
   const navigate = useNavigate();
@@ -10,7 +10,8 @@ export default function VehicleDetails() {
   const { id } = useParams();
 
   const vehicleFromState = (location.state as { vehicle?: any } | null)?.vehicle;
-  const vehicle = vehicleFromState || vehicles.find((v) => v.id === id);
+  const allVehicles = React.useMemo(() => getAllVehicles(), []);
+  const vehicle = vehicleFromState || allVehicles.find((v) => v.id === id);
 
   if (!vehicle) {
     return (

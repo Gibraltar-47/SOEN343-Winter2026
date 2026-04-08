@@ -1,5 +1,6 @@
 import type { Vehicle, VehicleFormData, VehicleType } from "../types/vehicle";
 import { getStoredVehicles, saveStoredVehicles } from "../utils/providerVehicleStorage";
+import { vehicles as defaultVehicles } from "../data/vehicles"
 
 function getVehicleEmoji(type: VehicleType): string {
   switch (type) {
@@ -14,6 +15,11 @@ function getVehicleEmoji(type: VehicleType): string {
     default:
       return "🚗";
   }
+}
+
+export function getAllVehicles(): Vehicle[] {
+  const storedVehicles = getStoredVehicles();
+  return [...defaultVehicles,...storedVehicles]
 }
 
 export function getProviderVehicles(providerName?: string): Vehicle[] {
