@@ -22,18 +22,19 @@ export function getAllVehicles(): Vehicle[] {
   return [...defaultVehicles,...storedVehicles]
 }
 
-export function getProviderVehicles(providerName?: string): Vehicle[] {
+export function getProviderVehicles(providerId?: string): Vehicle[] {
   const vehicles = getStoredVehicles();
 
-  if (!providerName) {
+  if (!providerId) {
     return vehicles;
   }
 
-  return vehicles.filter((vehicle) => vehicle.provider === providerName);
+  return vehicles.filter((vehicle) => vehicle.providerId === providerId);
 }
 
 export function addProviderVehicle(
   form: VehicleFormData,
+  providerId: string,
   providerName: string,
 ): Vehicle {
   const newVehicle: Vehicle = {
@@ -49,7 +50,8 @@ export function addProviderVehicle(
     fuel: form.fuel || undefined,
     rating: 4.5,
     image: getVehicleEmoji(form.type as VehicleType),
-    provider: providerName,
+    providerId,
+    providerName,
     features: ["Mobile booking", "GPS", "Flexible cancellation"],
     description:
       form.description ||

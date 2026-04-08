@@ -4,6 +4,7 @@ import imgLogo from "../assets/logo.png";
 import imgAdminLogo from "../assets/adminLogo.png";
 import type { VehicleFormData } from "../types/vehicle";
 import { addProviderVehicle } from "../services/providerVehicleService";
+import { sessionService } from "../services/sessionService";
 
 const inputClassName =
   "h-12 w-full rounded-full border-2 border-white/80 bg-[linear-gradient(147deg,rgba(223,223,223,0.69)_2.7%,rgba(245,245,245,0.96)_75.2%)] px-5 text-sm text-gray-700 shadow-[0px_4px_16px_rgba(0,0,0,0.08)] outline-none placeholder:text-gray-400 focus:border-[#76c573]";
@@ -23,7 +24,10 @@ const initialForm: VehicleFormData = {
 
 export default function AddVehicle() {
   const navigate = useNavigate();
-  const providerName = localStorage.getItem("providerName") || "Mobility Provider";
+  const currentUser = sessionService.getCurrentUser();
+  const providerId = currentUser?.id || "provider-unknown";
+  const providerName =
+    currentUser ? `${currentUser.firstName} ${currentUser.lastName}` : "Mobility Provider";
 
   const [form, setForm] = useState<VehicleFormData>(initialForm);
   const [message, setMessage] = useState("");
@@ -45,7 +49,7 @@ export default function AddVehicle() {
       setIsSubmitting(true);
       setMessage("");
 
-      addProviderVehicle(form, providerName);
+      addProviderVehicle(form, providerId, providerName);
 
       setMessage("Vehicle added successfully.");
       setForm(initialForm);

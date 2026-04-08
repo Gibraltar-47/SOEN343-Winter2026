@@ -183,7 +183,7 @@ export default function VehicleSearch() {
                       <div>
                         <h3 className="text-lg font-semibold text-[#297525]">{vehicle.name}</h3>
                         <p className="text-sm text-gray-500">{vehicle.type} · {vehicle.city}, {vehicle.region}</p>
-                        <p className="text-xs text-gray-400">{vehicle.provider}</p>
+                        <p className="text-xs text-gray-400">{vehicle.providerName}</p>
                       </div>
                     </div>
                     <div className="rounded-full bg-[#165713] px-3 py-1 text-xs font-semibold text-white">

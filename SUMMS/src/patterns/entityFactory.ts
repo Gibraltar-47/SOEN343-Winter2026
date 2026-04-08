@@ -10,6 +10,7 @@ export class UserFactory {
     role: ClientRole = "user"
   ): Client {
     return {
+      id: `client-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
       firstName,
       lastName,
       email,

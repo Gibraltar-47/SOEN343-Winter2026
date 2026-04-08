@@ -3,6 +3,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import imgLogo from '../assets/logo.png';
 import imgAdminLogo from '../assets/adminLogo.png';
 import { paymentService } from "../services/paymentService";
+import { sessionService } from "../services/sessionService";
 
 type ReservationState = {
   vehicleId: string;
@@ -10,7 +11,8 @@ type ReservationState = {
   city: string;
   region: string;
   pricePerHour: number;
-  provider: string;
+  providerId: string,
+  providerName: string;
   type: string;
 };
 
@@ -37,9 +39,19 @@ export default function Payment() {
   }
 
   const handleConfirmPayment = () => {
+    const currentUser = sessionService.getCurrentUser();
+
+    if (!currentUser) {
+      alert("You must be logged in to complete a reservation.");
+      navigate("/");
+      return;
+    }
+
     paymentService.processReservationPayment(
       reservation,
       paymentMethod,
+      currentUser.id,
+      `${currentUser.firstName} ${currentUser.lastName}`,
       3
     );
 

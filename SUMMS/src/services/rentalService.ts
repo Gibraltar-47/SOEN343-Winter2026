@@ -5,6 +5,11 @@ import { rentalAnalyticsObserver } from "./analyticsService";
 export type RentalStatus = "reserved" | "active" | "completed";
 
 export type RentalRecord = {
+  id: string;
+  userId: string;
+  userName: string;
+  providerId: string;
+  providerName: string;
   vehicleId: string;
   vehicleName: string;
   city: string;

@@ -2,12 +2,8 @@ import { useState } from "react";
 import imgLogo from "../assets/logo.png";
 import imgAdminLogo from "../assets/adminLogo.png";
 import { useNavigate } from "react-router-dom";
-<<<<<<< HEAD
-import type Client from "../types/user";
-=======
-import Client from "../types";
+import Client from "../types/user";
 import { loginClient } from "../services/userService";
->>>>>>> 8ee3de5 (adding design patterns and analytics feature)
 
 type LoginProps = {
   onLogin?: () => void;
@@ -53,18 +49,6 @@ export default function Login({ onLogin, onSignUp }: LoginProps) {
       alert("Invalid email or password. Please try again.");
       return;
     }
-=======
-    const exists = loginClient(email);
-
-    if (exists) {
-      alert("Login successful!");
-      navigate("/home");
-      return;
-    }
-
-    alert("Invalid email or password. Please try again.");
-  };
->>>>>>> 8ee3de5 (adding design patterns and analytics feature)
 
     alert("Login successful!");
     localStorage.setItem("currentUser", JSON.stringify(matchedClient));
