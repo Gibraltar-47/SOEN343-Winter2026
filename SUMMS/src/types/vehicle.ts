@@ -13,7 +13,8 @@ export type Vehicle = {
   fuel?: string;
   rating: number;
   image: string;
-  provider: string;
+  providerId: string;
+  providerName: string;
   features: string[];
   description: string;
   policies: string[];

@@ -2,8 +2,9 @@ import { useState } from "react";
 import imgLogo from "../assets/logo.png";
 import imgAdminLogo from "../assets/adminLogo.png";
 import { useNavigate } from "react-router-dom";
-import type Client from "../types/user";
+import Client from "../types/user";
 import { loginClient } from "../services/userService";
+import { sessionService } from "../services/sessionService";
 
 type LoginProps = {
   onLogin?: () => void;
@@ -51,22 +52,14 @@ export default function Login({ onLogin, onSignUp }: LoginProps) {
     }
 
     alert("Login successful!");
-    localStorage.setItem("currentUser", JSON.stringify(matchedClient));
+    sessionService.login(matchedClient);
 
     if (onLogin) {
       onLogin();
     }
-
-    if (matchedClient.role === "admin") {
-      navigate("/admin-dashboard");
-    } else if (matchedClient.role === "provider") {
-      navigate("/provider");
-    } else {
-      navigate("/home");
-    }
+    navigate(sessionService.getDashboardRoute());
   };
-
-  const handleSignUp = () => {
+    const handleSignUp = () => {
     if (onSignUp) {
       onSignUp(email, password);
       return;
@@ -148,7 +141,6 @@ export default function Login({ onLogin, onSignUp }: LoginProps) {
                 Log In
               </button>
             </div>
-
             <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:justify-center">
               <button
                 onClick={handleSignUp}

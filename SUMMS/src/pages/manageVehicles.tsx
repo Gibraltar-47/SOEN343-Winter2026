@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import imgLogo from "../assets/logo.png";
 import imgAdminLogo from "../assets/adminLogo.png";
 import type { Vehicle, VehicleType } from "../types/vehicle";
+import { sessionService } from "../services/sessionService";
 import {
   deleteProviderVehicle,
   getProviderVehicles,
@@ -14,7 +15,8 @@ const inputClassName =
 
 export default function ManageVehicles() {
   const navigate = useNavigate();
-  const providerName = localStorage.getItem("providerName") || "Mobility Provider";
+  const currentUser = sessionService.getCurrentUser();
+  const providerId = currentUser?.id;
 
   const [vehicles, setVehicles] = useState<Vehicle[]>([]);
   const [message, setMessage] = useState("");
@@ -35,9 +37,9 @@ export default function ManageVehicles() {
   });
 
   useEffect(() => {
-    setVehicles(getProviderVehicles(providerName));
+    setVehicles(getProviderVehicles(providerId));
     setLoading(false);
-  }, [providerName]);
+  }, [providerId]);
 
   function openEditModal(vehicle: Vehicle) {
     setSelectedVehicle(vehicle);
@@ -61,7 +63,7 @@ export default function ManageVehicles() {
   }
 
   function refreshVehicles() {
-    setVehicles(getProviderVehicles(providerName));
+    setVehicles(getProviderVehicles(providerId));
   }
 
   function handleDelete(vehicleId: string) {

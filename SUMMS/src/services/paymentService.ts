@@ -14,16 +14,30 @@ export type ReservationInput = {
   city: string;
   region: string;
   pricePerHour: number;
-  provider: string;
+  providerId: string;
+  providerName: string;
   type: string;
 };
 
 export type RentalRecord = ReservationInput & {
+  id: string;
+  userId: string;
+  userName: string;
   paymentMethod: string;
   total: number;
   status: RentalStatus;
   reservedAt: string;
 };
+
+const RENTALS_KEY = "rentals";
+
+function getStoredRentals(): RentalRecord[] {
+  return JSON.parse(localStorage.getItem(RENTALS_KEY) || "[]");
+}
+
+function saveStoredRentals(rentals: RentalRecord[]) {
+  localStorage.setItem(RENTALS_KEY, JSON.stringify(rentals));
+}
 
 class PaymentService implements Subject {
   private observers: Observer[] = [paymentAnalyticsObserver];
@@ -55,6 +69,8 @@ class PaymentService implements Subject {
   processReservationPayment(
     reservation: ReservationInput,
     paymentMethod: string,
+    userId: string,
+    userName: string,
     hours: number = 3
   ): RentalRecord {
     this.notify("payment_attempted");
@@ -67,14 +83,18 @@ class PaymentService implements Subject {
     this.notify("payment_successful");
 
     const rental: RentalRecord = {
+      id: `rental-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
       ...reservation,
+      userId,
+      userName,
       paymentMethod,
       total,
       status: "reserved",
       reservedAt: new Date().toISOString(),
     };
 
-    localStorage.setItem("currentRental", JSON.stringify(rental));
+    const rentals = getStoredRentals();
+    saveStoredRentals([...rentals, rental]);
     return rental;
   }
 }
