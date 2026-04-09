@@ -14,6 +14,7 @@ import ManageRentals from "./pages/manageRentals";
 import UserDashboard from "./pages/userDashboard";
 import ManageMyRentals from "./pages/manageMyRentals";
 import ProviderProfit from "./pages/providerProfit";
+import TripShare from "./pages/tripShare";
 
 export default function App() {
   return (
@@ -33,6 +34,7 @@ export default function App() {
       <Route path="/user" element={<UserDashboard />} />
       <Route path="/my-rentals" element={<ManageMyRentals />} />
       <Route path="/provider/profit" element={<ProviderProfit />} />
+      <Route path="/trip-share/:token" element={<TripShare />} />
     </Routes>
   );
 }
