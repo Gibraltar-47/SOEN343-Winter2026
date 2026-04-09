@@ -71,14 +71,6 @@ function nowIso() {
   return new Date().toISOString();
 }
 
-function buildStartMessage(session: SafetyShareSession) {
-  return `${session.userName} has started a trip in ${session.city}, ${session.region} using ${session.vehicleName}. Safety sharing is now active.`;
-}
-
-function buildEmergencyMessage(session: SafetyShareSession) {
-  return `Emergency alert: ${session.userName} triggered Safety Mode emergency during a trip in ${session.city}, ${session.region}.`;
-}
-
 function createNotifications(
   contacts: TrustedContact[],
   message: string,
@@ -112,6 +104,23 @@ function createNotifications(
   });
 
   return notifications;
+}
+
+function buildStageMessage(session: SafetyShareSession, stage: SafetyStage) {
+  switch (stage) {
+    case "Trip started":
+      return `${session.userName} started the trip with ${session.vehicleName} in ${session.city}, ${session.region}.`;
+    case "En route":
+      return `${session.userName} is now en route in ${session.city}, ${session.region}.`;
+    case "Near destination":
+      return `${session.userName} is near the destination.`;
+    case "Arrived safely":
+      return `${session.userName} has arrived safely.`;
+    case "Emergency raised":
+      return `Emergency alert: ${session.userName} triggered Safety Mode emergency during the trip.`;
+    default:
+      return `${session.userName} updated the trip stage to ${stage}.`;
+  }
 }
 
 export const safetyModeService = {
@@ -182,18 +191,21 @@ export const safetyModeService = {
     const current = sessions[rentalId];
     if (!current || !current.isEnabled || !current.canGoLive) return null;
 
+    const stage: SafetyStage =
+      current.stage === "Preparing to depart" ? "Trip started" : current.stage;
+
     const updated: SafetyShareSession = {
       ...current,
       isLive: true,
       emergency: false,
-      stage: current.stage === "Preparing to depart" ? "Trip started" : current.stage,
+      stage,
       tripStartedAt: current.tripStartedAt ?? nowIso(),
       activatedAt: current.activatedAt ?? nowIso(),
       endedAt: undefined,
       lastCheckInAt: nowIso(),
       notifications: [
         ...current.notifications,
-        ...createNotifications(current.trustedContacts, buildStartMessage(current)),
+        ...createNotifications(current.trustedContacts, buildStageMessage(current, stage)),
       ],
       lastUpdatedAt: nowIso(),
     };
@@ -233,6 +245,10 @@ export const safetyModeService = {
       stage,
       emergency: stage === "Emergency raised",
       lastCheckInAt: nowIso(),
+      notifications: [
+        ...current.notifications,
+        ...createNotifications(current.trustedContacts, buildStageMessage(current, stage)),
+      ],
       lastUpdatedAt: nowIso(),
     };
 
@@ -242,47 +258,7 @@ export const safetyModeService = {
   },
 
   triggerEmergency(rentalId: string): SafetyShareSession | null {
-    const sessions = getStoredSessions();
-    const current = sessions[rentalId];
-    if (!current || !current.isEnabled || !current.isLive) return null;
-
-    const updated: SafetyShareSession = {
-      ...current,
-      stage: "Emergency raised",
-      emergency: true,
-      lastCheckInAt: nowIso(),
-      notifications: [
-        ...current.notifications,
-        ...createNotifications(current.trustedContacts, buildEmergencyMessage(current)),
-      ],
-      lastUpdatedAt: nowIso(),
-    };
-
-    sessions[rentalId] = updated;
-    saveStoredSessions(sessions);
-    return updated;
-  },
-
-  sendCheckInUpdate(rentalId: string): SafetyShareSession | null {
-    const sessions = getStoredSessions();
-    const current = sessions[rentalId];
-    if (!current || !current.isEnabled || !current.isLive) return null;
-
-    const message = `${current.userName} checked in safely. Current trip stage: ${current.stage}.`;
-
-    const updated: SafetyShareSession = {
-      ...current,
-      lastCheckInAt: nowIso(),
-      notifications: [
-        ...current.notifications,
-        ...createNotifications(current.trustedContacts, message),
-      ],
-      lastUpdatedAt: nowIso(),
-    };
-
-    sessions[rentalId] = updated;
-    saveStoredSessions(sessions);
-    return updated;
+    return this.updateStage(rentalId, "Emergency raised");
   },
 
   clearSession(rentalId: string) {

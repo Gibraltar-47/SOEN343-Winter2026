@@ -91,6 +91,13 @@ function calculateCompletedTotal(
   return Number((hours * pricePerHour).toFixed(2));
 }
 
+const primaryBtn =
+  "rounded-full px-5 py-2 text-sm font-semibold text-white transition hover:opacity-90";
+const softBtn =
+  "rounded-full border border-gray-200 bg-white px-4 py-2 text-sm font-semibold text-[#165713] transition hover:bg-gray-50";
+const chipBtn =
+  "rounded-full px-4 py-2 text-xs font-semibold text-white transition hover:opacity-90";
+
 export default function ManageMyRentals() {
   const navigate = useNavigate();
   const currentUser = sessionService.getCurrentUser();
@@ -141,7 +148,7 @@ export default function ManageMyRentals() {
     saveStoredRentals(updatedRentals);
     safetyModeService.startLiveSharing(rentalId);
     refreshRentals();
-    setMessage("Rental started. Live sharing notifications were sent to trusted contacts.");
+    setMessage("Rental started. Trusted contacts were notified that live sharing began.");
   }
 
   function handleCompleteRental(rentalId: string) {
@@ -168,7 +175,7 @@ export default function ManageMyRentals() {
     saveStoredRentals(updatedRentals);
     safetyModeService.stopLiveSharing(rentalId);
     refreshRentals();
-    setMessage("Rental completed and Safety Mode sharing stopped.");
+    setMessage("Rental completed and live sharing stopped.");
   }
 
   function handleCancelRental(rentalId: string) {
@@ -188,24 +195,7 @@ export default function ManageMyRentals() {
     saveStoredRentals(updatedRentals);
     safetyModeService.stopLiveSharing(rentalId);
     refreshRentals();
-    setMessage("Rental cancelled and Safety Mode sharing stopped.");
-  }
-
-  function handleStartLiveSharing(rentalId: string, rentalStatus: RentalStatus) {
-    if (rentalStatus !== "active") {
-      setMessage("Live sharing can only start after the rental has started.");
-      return;
-    }
-
-    const updated = safetyModeService.startLiveSharing(rentalId);
-
-    if (!updated) {
-      setMessage("Safety Mode is not enabled for this rental.");
-      return;
-    }
-
-    refreshRentals();
-    setMessage("Live sharing started and trusted contacts were notified.");
+    setMessage("Rental cancelled and live sharing stopped.");
   }
 
   function handleStopLiveSharing(rentalId: string) {
@@ -229,7 +219,7 @@ export default function ManageMyRentals() {
     }
 
     refreshRentals();
-    setMessage("Emergency alert triggered. Trusted contacts were notified.");
+    setMessage("Emergency alert triggered. Trusted contacts were notified immediately.");
   }
 
   function handleCopyShareLink(rentalId: string) {
@@ -255,18 +245,6 @@ export default function ManageMyRentals() {
     navigate(`/trip-share/${session.token}`);
   }
 
-  function handleCheckIn(rentalId: string) {
-    const updated = safetyModeService.sendCheckInUpdate(rentalId);
-
-    if (!updated) {
-      setMessage("Check-in is only available during live sharing.");
-      return;
-    }
-
-    refreshRentals();
-    setMessage("Check-in update sent to trusted contacts.");
-  }
-
   function handleStageUpdate(
     rentalId: string,
     stage: "En route" | "Near destination" | "Arrived safely",
@@ -279,7 +257,7 @@ export default function ManageMyRentals() {
     }
 
     refreshRentals();
-    setMessage(`Trip stage updated to "${stage}".`);
+    setMessage(`Stage updated to "${stage}". Trusted contacts were notified.`);
   }
 
   return (
@@ -343,7 +321,7 @@ export default function ManageMyRentals() {
                           key={rental.id}
                           className="rounded-[28px] border-2 border-white/80 bg-white/70 px-6 py-5 shadow-[0px_4px_16px_rgba(0,0,0,0.08)]"
                         >
-                          <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+                          <div className="grid gap-6 lg:grid-cols-[1.3fr,0.9fr]">
                             <div className="space-y-2">
                               <div className="flex flex-wrap items-center gap-3">
                                 <p className="text-lg font-semibold text-[#297525]">
@@ -388,131 +366,157 @@ export default function ManageMyRentals() {
                               </p>
 
                               {safetySession && (
-                                <div className="mt-3 rounded-2xl bg-[#f7faf7] p-4 text-sm text-gray-600">
+                                <div className="mt-4 rounded-2xl bg-[#f7faf7] p-4 text-sm text-gray-600">
                                   <p className="font-semibold text-[#297525]">Safety Mode Details</p>
-                                  <p className="mt-1">Stage: {safetySession.stage}</p>
-                                  <p>Trusted contacts: {safetySession.trustedContacts.length}</p>
-                                  <p>Expected return: {formatDate(safetySession.expectedReturnAt)}</p>
-                                  <p>Last check-in: {formatDate(safetySession.lastCheckInAt)}</p>
-                                  <p>Notifications sent: {safetySession.notifications.length}</p>
+                                  <div className="mt-2 grid gap-1 sm:grid-cols-2">
+                                    <p>Stage: {safetySession.stage}</p>
+                                    <p>Trusted contacts: {safetySession.trustedContacts.length}</p>
+                                    <p>Expected return: {formatDate(safetySession.expectedReturnAt)}</p>
+                                    <p>Last update: {formatDate(safetySession.lastUpdatedAt)}</p>
+                                    <p>Contacts notified: {safetySession.trustedContacts.length}</p>
+                                    <p>Total messages: {safetySession.notifications.length}</p>
+                                  </div>
                                 </div>
                               )}
                             </div>
 
-                            <div className="flex flex-col gap-2 lg:items-end">
-                              <div className="rounded-full bg-[#f3f3f3] px-4 py-2 text-sm text-gray-500">
-                                ${rental.pricePerHour}/h
+                            <div className="space-y-4">
+                              <div className="flex justify-end">
+                                <div className="rounded-full bg-[#f3f3f3] px-4 py-2 text-sm text-gray-500">
+                                  ${rental.pricePerHour}/h
+                                </div>
                               </div>
 
-                              {rental.status === "reserved" ? (
-                                <>
-                                  <button
-                                    onClick={() => handleStartRental(rental.id)}
-                                    className="rounded-full bg-[#41a7ff] px-5 py-2 text-sm font-semibold text-white transition hover:bg-blue-600"
-                                  >
-                                    Start Rental
-                                  </button>
+                              <div className="rounded-2xl bg-[#f8f8f8] p-4">
+                                <p className="mb-3 text-sm font-semibold text-[#297525]">
+                                  Rental Actions
+                                </p>
+                                <div className="flex flex-wrap gap-2">
+                                  {rental.status === "reserved" && (
+                                    <>
+                                      <button
+                                        onClick={() => handleStartRental(rental.id)}
+                                        className={`${primaryBtn} bg-[#41a7ff]`}
+                                      >
+                                        Start Rental
+                                      </button>
+                                      <button
+                                        onClick={() => handleCancelRental(rental.id)}
+                                        className={`${primaryBtn} bg-[#d4183d]`}
+                                      >
+                                        Cancel Rental
+                                      </button>
+                                    </>
+                                  )}
 
-                                  <button
-                                    onClick={() => handleCancelRental(rental.id)}
-                                    className="rounded-full bg-[#d4183d] px-5 py-2 text-sm font-semibold text-white transition hover:opacity-90"
-                                  >
-                                    Cancel Rental
-                                  </button>
-                                </>
-                              ) : rental.status === "active" ? (
-                                <>
-                                  <button
-                                    onClick={() => handleCompleteRental(rental.id)}
-                                    className="rounded-full bg-[#165713] px-5 py-2 text-sm font-semibold text-white transition hover:bg-[#11440f]"
-                                  >
-                                    Complete Rental
-                                  </button>
+                                  {rental.status === "active" && (
+                                    <>
+                                      <button
+                                        onClick={() => handleCompleteRental(rental.id)}
+                                        className={`${primaryBtn} bg-[#165713]`}
+                                      >
+                                        Complete Rental
+                                      </button>
+                                      <button
+                                        onClick={() => handleCancelRental(rental.id)}
+                                        className={`${primaryBtn} bg-[#d4183d]`}
+                                      >
+                                        Cancel Rental
+                                      </button>
+                                    </>
+                                  )}
 
-                                  <button
-                                    onClick={() => handleCancelRental(rental.id)}
-                                    className="rounded-full bg-[#d4183d] px-5 py-2 text-sm font-semibold text-white transition hover:opacity-90"
-                                  >
-                                    Cancel Rental
-                                  </button>
-                                </>
-                              ) : (
-                                <div className="rounded-full bg-white/80 px-4 py-2 text-xs font-semibold text-gray-400">
-                                  No action available
+                                  {(rental.status === "completed" || rental.status === "cancelled") && (
+                                    <div className="rounded-full bg-white px-4 py-2 text-xs font-semibold text-gray-400">
+                                      No action available
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+
+                              {safetySession && (
+                                <div className="rounded-2xl bg-[#f8f8f8] p-4">
+                                  <p className="mb-3 text-sm font-semibold text-[#297525]">
+                                    Safety Sharing
+                                  </p>
+
+                                  <div className="flex flex-wrap gap-2">
+                                    {safetySession.isLive ? (
+                                      <button
+                                        onClick={() => handleStopLiveSharing(rental.id)}
+                                        className={`${primaryBtn} bg-[#8a6d1f]`}
+                                      >
+                                        Stop Live Sharing
+                                      </button>
+                                    ) : (
+                                      <button
+                                        onClick={() => handleStageUpdate(rental.id, "En route")}
+                                        disabled
+                                        className="hidden"
+                                      />
+                                    )}
+
+                                    <button
+                                      onClick={() => handleCopyShareLink(rental.id)}
+                                      className={softBtn}
+                                    >
+                                      Copy Share Link
+                                    </button>
+
+                                    <button
+                                      onClick={() => handleViewSharedTrip(rental.id)}
+                                      className={softBtn}
+                                    >
+                                      View Shared Trip
+                                    </button>
+
+                                    {safetySession.isLive && (
+                                      <button
+                                        onClick={() => handleEmergency(rental.id)}
+                                        className={`${primaryBtn} bg-[#d4183d]`}
+                                      >
+                                        Trigger Emergency
+                                      </button>
+                                    )}
+                                  </div>
+
+                                  {!safetySession.isLive && rental.status !== "active" && (
+                                    <p className="mt-3 text-xs text-gray-500">
+                                      Live sharing starts only after the rental begins.
+                                    </p>
+                                  )}
                                 </div>
                               )}
 
-                              {safetySession && !safetySession.isLive && rental.status === "active" && (
-                                <button
-                                  onClick={() => handleStartLiveSharing(rental.id, rental.status)}
-                                  className="rounded-full bg-[#297525] px-5 py-2 text-sm font-semibold text-white transition hover:opacity-90"
-                                >
-                                  Start Live Sharing
-                                </button>
-                              )}
-
                               {safetySession?.isLive && (
-                                <>
-                                  <button
-                                    onClick={() => handleStopLiveSharing(rental.id)}
-                                    className="rounded-full bg-[#8a6d1f] px-5 py-2 text-sm font-semibold text-white transition hover:opacity-90"
-                                  >
-                                    Stop Live Sharing
-                                  </button>
-
-                                  <button
-                                    onClick={() => handleCheckIn(rental.id)}
-                                    className="rounded-full bg-[#176b87] px-5 py-2 text-sm font-semibold text-white transition hover:opacity-90"
-                                  >
-                                    Send Check-In
-                                  </button>
-
-                                  <button
-                                    onClick={() => handleStageUpdate(rental.id, "En route")}
-                                    className="rounded-full bg-[#41a7ff] px-5 py-2 text-sm font-semibold text-white transition hover:opacity-90"
-                                  >
-                                    Mark En Route
-                                  </button>
-
-                                  <button
-                                    onClick={() => handleStageUpdate(rental.id, "Near destination")}
-                                    className="rounded-full bg-[#297525] px-5 py-2 text-sm font-semibold text-white transition hover:opacity-90"
-                                  >
-                                    Near Destination
-                                  </button>
-
-                                  <button
-                                    onClick={() => handleStageUpdate(rental.id, "Arrived safely")}
-                                    className="rounded-full bg-[#165713] px-5 py-2 text-sm font-semibold text-white transition hover:opacity-90"
-                                  >
-                                    Arrived Safely
-                                  </button>
-
-                                  <button
-                                    onClick={() => handleEmergency(rental.id)}
-                                    className="rounded-full bg-[#d4183d] px-5 py-2 text-sm font-semibold text-white transition hover:opacity-90"
-                                  >
-                                    Trigger Emergency
-                                  </button>
-                                </>
-                              )}
-
-                              {safetySession && (
-                                <>
-                                  <button
-                                    onClick={() => handleCopyShareLink(rental.id)}
-                                    className="rounded-full bg-[#176b87] px-5 py-2 text-sm font-semibold text-white transition hover:opacity-90"
-                                  >
-                                    Copy Share Link
-                                  </button>
-
-                                  <button
-                                    onClick={() => handleViewSharedTrip(rental.id)}
-                                    className="rounded-full bg-[#165713] px-5 py-2 text-sm font-semibold text-white transition hover:opacity-90"
-                                  >
-                                    View Shared Trip
-                                  </button>
-                                </>
+                                <div className="rounded-2xl bg-[#f8f8f8] p-4">
+                                  <p className="mb-3 text-sm font-semibold text-[#297525]">
+                                    Trip Updates
+                                  </p>
+                                  <div className="flex flex-wrap gap-2">
+                                    <button
+                                      onClick={() => handleStageUpdate(rental.id, "En route")}
+                                      className={`${chipBtn} bg-[#41a7ff]`}
+                                    >
+                                      En Route
+                                    </button>
+                                    <button
+                                      onClick={() => handleStageUpdate(rental.id, "Near destination")}
+                                      className={`${chipBtn} bg-[#297525]`}
+                                    >
+                                      Near Destination
+                                    </button>
+                                    <button
+                                      onClick={() => handleStageUpdate(rental.id, "Arrived safely")}
+                                      className={`${chipBtn} bg-[#165713]`}
+                                    >
+                                      Arrived Safely
+                                    </button>
+                                  </div>
+                                  <p className="mt-3 text-xs text-gray-500">
+                                    Each update immediately notifies trusted contacts.
+                                  </p>
+                                </div>
                               )}
                             </div>
                           </div>
