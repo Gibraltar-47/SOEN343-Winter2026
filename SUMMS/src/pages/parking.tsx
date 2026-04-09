@@ -12,6 +12,7 @@ import {
 import {
   addParkingReservation,
   getParkingReservations,
+  removeParkingReservation,
 } from "../services/parkingStorage";
 
 const AREAS = [
@@ -26,28 +27,31 @@ const AREAS = [
 export default function Parking() {
   const navigate = useNavigate();
   const currentUser = sessionService.getCurrentUser();
+  const currentUserId = currentUser ? String(currentUser.id).trim() : "";
 
   const [lots, setLots] = useState<ParkingLot[]>(parkingLots);
   const [selectedArea, setSelectedArea] = useState("All");
   const [reservations, setReservations] = useState<ParkingReservation[]>([]);
   const [message, setMessage] = useState("");
 
-  useEffect(() => {
+  function refreshReservations() {
     const allReservations = getParkingReservations();
 
-    if (!currentUser) {
+    if (!currentUserId) {
       setReservations([]);
       return;
     }
-
-    const currentUserId = String(currentUser.id).trim();
 
     const userReservations = allReservations.filter(
       (reservation) => String(reservation.userId).trim() === currentUserId
     );
 
     setReservations(userReservations);
-  }, [currentUser]);
+  }
+
+  useEffect(() => {
+    refreshReservations();
+  }, [currentUserId]);
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -73,6 +77,9 @@ export default function Parking() {
   );
 
   const totalReserved = totalSpots - totalAvailable;
+
+  const getReservationForLot = (lotId: string) =>
+    reservations.find((reservation) => reservation.lotId === lotId);
 
   const hasReservationForLot = (lotId: string) =>
     reservations.some((reservation) => reservation.lotId === lotId);
@@ -100,21 +107,30 @@ export default function Parking() {
     };
 
     addParkingReservation(reservation);
-
-    const allReservations = getParkingReservations();
-    const currentUserId = String(currentUser.id).trim();
-
-    const userReservations = allReservations.filter(
-      (item) => String(item.userId).trim() === currentUserId
-    );
-
-    setReservations(userReservations);
+    refreshReservations();
     setMessage("Parking reservation created successfully.");
 
     setLots((prev) =>
       prev.map((item) =>
         item.id === lot.id
           ? { ...item, availableSpots: Math.max(0, item.availableSpots - 1) }
+          : item
+      )
+    );
+  };
+
+  const handleCancelReservation = (reservationId: string, lotId: string) => {
+    removeParkingReservation(reservationId);
+    refreshReservations();
+    setMessage("Parking reservation cancelled successfully.");
+
+    setLots((prev) =>
+      prev.map((item) =>
+        item.id === lotId
+          ? {
+              ...item,
+              availableSpots: Math.min(item.totalSpots, item.availableSpots + 1),
+            }
           : item
       )
     );
@@ -148,6 +164,15 @@ export default function Parking() {
                 Real-time monitoring of parking availability, pricing, and
                 reservations across Montreal and Laval.
               </p>
+            </div>
+
+            <div className="flex justify-center">
+              <button
+                onClick={() => navigate("/my-parking-reservations")}
+                className="h-11 rounded-full bg-[#165713] px-6 text-sm font-semibold text-white transition hover:bg-[#11440f]"
+              >
+                Manage My Parking Reservations
+              </button>
             </div>
 
             {message ? (
@@ -190,32 +215,24 @@ export default function Parking() {
                   </p>
                 </div>
 
-                <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-                  <select
-                    value={selectedArea}
-                    onChange={(e) => setSelectedArea(e.target.value)}
-                    className="h-11 rounded-full border border-gray-200 bg-white px-4 text-sm outline-none"
-                  >
-                    {AREAS.map((area) => (
-                      <option key={area} value={area}>
-                        {area}
-                      </option>
-                    ))}
-                  </select>
-
-                  <button
-                    onClick={() => navigate("/my-parking-reservations")}
-                    className="h-11 rounded-full bg-[#165713] px-5 text-sm font-semibold text-white transition hover:bg-[#11440f]"
-                  >
-                    Manage My Parking Reservations
-                  </button>
-                </div>
+                <select
+                  value={selectedArea}
+                  onChange={(e) => setSelectedArea(e.target.value)}
+                  className="h-11 rounded-full border border-gray-200 bg-white px-4 text-sm outline-none"
+                >
+                  {AREAS.map((area) => (
+                    <option key={area} value={area}>
+                      {area}
+                    </option>
+                  ))}
+                </select>
               </div>
             </div>
 
             <section className="flex flex-col gap-4">
               {filteredLots.map((lot) => {
-                const reserved = hasReservationForLot(lot.id);
+                const reservation = getReservationForLot(lot.id);
+                const reserved = Boolean(reservation);
                 const full = lot.availableSpots === 0;
 
                 return (
@@ -242,8 +259,7 @@ export default function Parking() {
                             {lot.totalSpots}
                           </span>
                           <span>
-                            <strong>Price:</strong> ${lot.pricePerHour.toFixed(2)}
-                            /hr
+                            <strong>Price:</strong> ${lot.pricePerHour.toFixed(2)}/hr
                           </span>
                         </div>
                       </div>
@@ -265,21 +281,37 @@ export default function Parking() {
                             : "Available"}
                         </span>
 
-                        <button
-                          onClick={() => handleReserve(lot)}
-                          disabled={full || reserved}
-                          className={`h-11 rounded-full px-6 text-sm font-semibold text-white transition ${
-                            full || reserved
-                              ? "cursor-not-allowed bg-gray-400"
-                              : "bg-[#76c573] hover:bg-[#5fb85c]"
-                          }`}
-                        >
-                          {reserved
-                            ? "Reserved"
-                            : full
-                            ? "Unavailable"
-                            : "Reserve Spot"}
-                        </button>
+                        {reserved ? (
+                          <div className="flex flex-wrap gap-2">
+                            <button
+                              disabled
+                              className="h-11 cursor-not-allowed rounded-full bg-gray-400 px-6 text-sm font-semibold text-white"
+                            >
+                              Reserved
+                            </button>
+
+                            <button
+                              onClick={() =>
+                                handleCancelReservation(reservation!.id, lot.id)
+                              }
+                              className="h-11 rounded-full bg-[#d4183d] px-6 text-sm font-semibold text-white transition hover:opacity-90"
+                            >
+                              Cancel
+                            </button>
+                          </div>
+                        ) : (
+                          <button
+                            onClick={() => handleReserve(lot)}
+                            disabled={full}
+                            className={`h-11 rounded-full px-6 text-sm font-semibold text-white transition ${
+                              full
+                                ? "cursor-not-allowed bg-gray-400"
+                                : "bg-[#76c573] hover:bg-[#5fb85c]"
+                            }`}
+                          >
+                            {full ? "Unavailable" : "Reserve Spot"}
+                          </button>
+                        )}
                       </div>
                     </div>
                   </div>

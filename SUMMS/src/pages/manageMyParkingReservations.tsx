@@ -24,7 +24,7 @@ function formatDate(value?: string) {
 export default function ManageMyParkingReservations() {
   const navigate = useNavigate();
   const currentUser = sessionService.getCurrentUser();
-  const userId = currentUser?.id;
+  const currentUserId = currentUser ? String(currentUser.id).trim() : "";
 
   const [reservations, setReservations] = useState<ParkingReservation[]>([]);
   const [message, setMessage] = useState("");
@@ -32,12 +32,10 @@ export default function ManageMyParkingReservations() {
   function refreshReservations() {
     const allReservations = getParkingReservations();
 
-    if (!currentUser) {
+    if (!currentUserId) {
       setReservations([]);
       return;
     }
-
-    const currentUserId = String(currentUser.id).trim();
 
     const userReservations = allReservations.filter(
       (reservation) => String(reservation.userId).trim() === currentUserId
@@ -48,7 +46,7 @@ export default function ManageMyParkingReservations() {
 
   useEffect(() => {
     refreshReservations();
-  }, [userId]);
+  }, [currentUserId]);
 
   const sortedReservations = useMemo(() => {
     return [...reservations].sort(
