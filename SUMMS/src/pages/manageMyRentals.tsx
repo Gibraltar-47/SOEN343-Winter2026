@@ -56,14 +56,22 @@ function getSafetyBadgeClasses(session: SafetyShareSession | null) {
   if (!session || !session.isEnabled) return "bg-gray-100 text-gray-500";
   if (session.emergency) return "bg-[#ffe0e6] text-[#b4233c]";
   if (session.isLive) return "bg-[#dff5df] text-[#297525]";
-  return "bg-[#fff7d6] text-[#8a6d1f]";
+  return "bg-[#eef6df] text-[#5b8a2d]";
 }
 
-function getSafetyBadgeText(session: SafetyShareSession | null) {
+function buildSharedWithText(session: SafetyShareSession | null) {
   if (!session || !session.isEnabled) return "Safety Off";
   if (session.emergency) return "Emergency";
   if (session.isLive) return "Live Sharing";
-  return "Ready to Share";
+
+  const names = session.trustedContacts
+    .map((contact) => contact.fullName.trim().split(" ")[0])
+    .filter(Boolean);
+
+  if (names.length === 0) return "Safety On";
+  if (names.length === 1) return `Shared with ${names[0]}`;
+  if (names.length === 2) return `Shared with ${names[0]} and ${names[1]}`;
+  return `Shared with ${names[0]}, ${names[1]} and ${names[2]}`;
 }
 
 function formatDate(value?: string) {
@@ -175,7 +183,7 @@ export default function ManageMyRentals() {
     saveStoredRentals(updatedRentals);
     safetyModeService.stopLiveSharing(rentalId);
     refreshRentals();
-    setMessage("Rental completed and live sharing stopped.");
+    setMessage("Rental completed. You can now only review the trip summary.");
   }
 
   function handleCancelRental(rentalId: string) {
@@ -314,6 +322,8 @@ export default function ManageMyRentals() {
                 ) : (
                   sortedRentals.map((rental) => {
                     const safetySession = safetyModeService.getSessionByRentalId(rental.id);
+                    const isClosed =
+                      rental.status === "completed" || rental.status === "cancelled";
 
                     return (
                       <div
@@ -321,76 +331,45 @@ export default function ManageMyRentals() {
                         className="rounded-[30px] border border-white/70 bg-white/75 p-6 shadow-[0px_8px_24px_rgba(0,0,0,0.06)]"
                       >
                         <div className="flex flex-col gap-6">
-                          <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
-                            <div className="min-w-0 flex-1">
-                              <div className="flex flex-wrap items-center gap-2">
-                                <h2 className="text-2xl font-semibold text-[#297525]">
-                                  {rental.vehicleName}
-                                </h2>
-                                <span className={`rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-wide ${getStatusClasses(rental.status)}`}>
-                                  {rental.status}
-                                </span>
-                                <span className={`rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-wide ${getSafetyBadgeClasses(safetySession)}`}>
-                                  {getSafetyBadgeText(safetySession)}
-                                </span>
-                              </div>
-
-                              <div className="mt-4 grid gap-x-8 gap-y-2 text-sm text-gray-500 sm:grid-cols-2">
-                                <p>
-                                  Provider:{" "}
-                                  <span className="font-semibold text-[#297525]">
-                                    {rental.providerName}
-                                  </span>
-                                </p>
-                                <p>
-                                  {rental.type} · {rental.city}, {rental.region}
-                                </p>
-                                <p>Reserved on {formatDate(rental.reservedAt)}</p>
-                                <p>Started at: {formatDate(rental.startedAt)}</p>
-                                <p>Ended at: {formatDate(rental.endedAt)}</p>
-                                <p>Payment: {rental.paymentMethod}</p>
-                              </div>
-
-                              <div className="mt-4 flex flex-wrap items-center gap-3">
-                                <div className="rounded-full bg-[#f3f3f3] px-4 py-2 text-sm text-gray-500">
-                                  ${rental.pricePerHour}/h
-                                </div>
-                                <div className="text-sm font-semibold text-[#297525]">
-                                  {rental.status === "completed"
-                                    ? `Final total: $${rental.total.toFixed(2)}`
-                                    : `Current total: $${Number(rental.total).toFixed(2)}`}
-                                </div>
-                              </div>
+                          <div className="flex flex-col gap-4">
+                            <div className="flex flex-wrap items-center gap-2">
+                              <h2 className="text-2xl font-semibold text-[#297525]">
+                                {rental.vehicleName}
+                              </h2>
+                              <span className={`rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-wide ${getStatusClasses(rental.status)}`}>
+                                {rental.status}
+                              </span>
+                              <span className={`rounded-full px-3 py-1 text-xs font-semibold tracking-wide ${getSafetyBadgeClasses(safetySession)}`}>
+                                {buildSharedWithText(safetySession)}
+                              </span>
                             </div>
 
-                            {safetySession && (
-                              <div className="w-full xl:max-w-[360px]">
-                                <div className="rounded-2xl bg-[#f7faf7] p-4 text-sm text-gray-600">
-                                  <p className="font-semibold text-[#297525]">
-                                    Safety Mode Details
-                                  </p>
-                                  <div className="mt-3 grid grid-cols-2 gap-x-4 gap-y-2">
-                                    <p>Stage:</p>
-                                    <p className="font-medium">{safetySession.stage}</p>
+                            <div className="grid gap-x-10 gap-y-2 text-sm text-gray-500 md:grid-cols-2">
+                              <p>
+                                Provider:{" "}
+                                <span className="font-semibold text-[#297525]">
+                                  {rental.providerName}
+                                </span>
+                              </p>
+                              <p>
+                                {rental.type} · {rental.city}, {rental.region}
+                              </p>
+                              <p>Reserved on {formatDate(rental.reservedAt)}</p>
+                              <p>Started at: {formatDate(rental.startedAt)}</p>
+                              <p>Ended at: {formatDate(rental.endedAt)}</p>
+                              <p>Payment: {rental.paymentMethod}</p>
+                            </div>
 
-                                    <p>Contacts:</p>
-                                    <p className="font-medium">{safetySession.trustedContacts.length}</p>
-
-                                    <p>Expected return:</p>
-                                    <p className="font-medium">{formatDate(safetySession.expectedReturnAt)}</p>
-
-                                    <p>Last update:</p>
-                                    <p className="font-medium">{formatDate(safetySession.lastUpdatedAt)}</p>
-
-                                    <p>Contacts notified:</p>
-                                    <p className="font-medium">{safetySession.trustedContacts.length}</p>
-
-                                    <p>Total messages:</p>
-                                    <p className="font-medium">{safetySession.notifications.length}</p>
-                                  </div>
-                                </div>
+                            <div className="flex flex-wrap items-center gap-3">
+                              <div className="rounded-full bg-[#f3f3f3] px-4 py-2 text-sm text-gray-500">
+                                ${rental.pricePerHour}/h
                               </div>
-                            )}
+                              <div className="text-sm font-semibold text-[#297525]">
+                                {rental.status === "completed"
+                                  ? `Final total: $${rental.total.toFixed(2)}`
+                                  : `Current total: $${Number(rental.total).toFixed(2)}`}
+                              </div>
+                            </div>
                           </div>
 
                           <div className="grid gap-4 lg:grid-cols-3">
@@ -433,7 +412,7 @@ export default function ManageMyRentals() {
                                   </>
                                 )}
 
-                                {(rental.status === "completed" || rental.status === "cancelled") && (
+                                {isClosed && (
                                   <div className="rounded-full bg-white px-4 py-2 text-xs font-semibold text-gray-400">
                                     No action available
                                   </div>
@@ -445,17 +424,47 @@ export default function ManageMyRentals() {
                               <p className="mb-3 text-sm font-semibold text-[#297525]">
                                 Safety Sharing
                               </p>
+
                               <div className="flex flex-wrap gap-2">
-                                {safetySession?.isLive && (
+                                {!isClosed && safetySession?.isLive && (
+                                  <>
+                                    <button
+                                      onClick={() => handleStopLiveSharing(rental.id)}
+                                      className={`${primaryBtn} bg-[#8a6d1f]`}
+                                    >
+                                      Stop Live Sharing
+                                    </button>
+                                    <button
+                                      onClick={() => handleCopyShareLink(rental.id)}
+                                      className={softBtn}
+                                    >
+                                      Copy Link
+                                    </button>
+                                    <button
+                                      onClick={() => handleViewSharedTrip(rental.id)}
+                                      className={softBtn}
+                                    >
+                                      View Trip
+                                    </button>
+                                    <button
+                                      onClick={() => handleEmergency(rental.id)}
+                                      className={`${primaryBtn} bg-[#d4183d]`}
+                                    >
+                                      Emergency
+                                    </button>
+                                  </>
+                                )}
+
+                                {isClosed && safetySession && (
                                   <button
-                                    onClick={() => handleStopLiveSharing(rental.id)}
-                                    className={`${primaryBtn} bg-[#8a6d1f]`}
+                                    onClick={() => handleViewSharedTrip(rental.id)}
+                                    className={softBtn}
                                   >
-                                    Stop Live Sharing
+                                    View Trip Summary
                                   </button>
                                 )}
 
-                                {safetySession && (
+                                {!isClosed && safetySession && !safetySession.isLive && (
                                   <>
                                     <button
                                       onClick={() => handleCopyShareLink(rental.id)}
@@ -471,22 +480,17 @@ export default function ManageMyRentals() {
                                     </button>
                                   </>
                                 )}
-
-                                {safetySession?.isLive && (
-                                  <button
-                                    onClick={() => handleEmergency(rental.id)}
-                                    className={`${primaryBtn} bg-[#d4183d]`}
-                                  >
-                                    Emergency
-                                  </button>
-                                )}
                               </div>
 
-                              {!safetySession?.isLive && (
+                              {isClosed ? (
+                                <p className="mt-3 text-xs text-gray-500">
+                                  This rental is closed. You can only review the trip summary.
+                                </p>
+                              ) : !safetySession?.isLive ? (
                                 <p className="mt-3 text-xs text-gray-500">
                                   Live sharing begins automatically when the rental starts.
                                 </p>
-                              )}
+                              ) : null}
                             </div>
 
                             <div className="rounded-2xl bg-[#fafafa] p-4">
@@ -494,7 +498,7 @@ export default function ManageMyRentals() {
                                 Trip Updates
                               </p>
 
-                              {safetySession?.isLive ? (
+                              {!isClosed && safetySession?.isLive ? (
                                 <>
                                   <div className="flex flex-wrap gap-2">
                                     <button
@@ -522,11 +526,57 @@ export default function ManageMyRentals() {
                                 </>
                               ) : (
                                 <p className="text-xs text-gray-500">
-                                  Trip updates become available during live sharing.
+                                  {isClosed
+                                    ? "Trip updates are no longer available after the rental ends."
+                                    : "Trip updates become available during live sharing."}
                                 </p>
                               )}
                             </div>
                           </div>
+
+                          {safetySession && (
+                            <div className="rounded-2xl bg-[#f7faf7] p-5 text-sm text-gray-600">
+                              <p className="mb-4 font-semibold text-[#297525]">
+                                Safety Mode Details
+                              </p>
+
+                              <div className="grid gap-x-8 gap-y-3 md:grid-cols-3">
+                                <div>
+                                  <p className="text-xs uppercase tracking-wide text-gray-400">Stage</p>
+                                  <p className="mt-1 font-medium">{safetySession.stage}</p>
+                                </div>
+
+                                <div>
+                                  <p className="text-xs uppercase tracking-wide text-gray-400">Shared with</p>
+                                  <p className="mt-1 font-medium">
+                                    {safetySession.trustedContacts
+                                      .map((contact) => contact.fullName)
+                                      .join(", ")}
+                                  </p>
+                                </div>
+
+                                <div>
+                                  <p className="text-xs uppercase tracking-wide text-gray-400">Expected return</p>
+                                  <p className="mt-1 font-medium">{formatDate(safetySession.expectedReturnAt)}</p>
+                                </div>
+
+                                <div>
+                                  <p className="text-xs uppercase tracking-wide text-gray-400">Last update</p>
+                                  <p className="mt-1 font-medium">{formatDate(safetySession.lastUpdatedAt)}</p>
+                                </div>
+
+                                <div>
+                                  <p className="text-xs uppercase tracking-wide text-gray-400">Contacts notified</p>
+                                  <p className="mt-1 font-medium">{safetySession.trustedContacts.length}</p>
+                                </div>
+
+                                <div>
+                                  <p className="text-xs uppercase tracking-wide text-gray-400">Total messages</p>
+                                  <p className="mt-1 font-medium">{safetySession.notifications.length}</p>
+                                </div>
+                              </div>
+                            </div>
+                          )}
                         </div>
                       </div>
                     );
