@@ -1,9 +1,9 @@
 import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import imgLogo from '../assets/logo.png';
-import imgAdminLogo from '../assets/adminLogo.png';
 import { vehicleTypes } from '../data/vehicles';
 import { getAllVehicles } from '../services/providerVehicleService';
+import AppHeader from '../component/AppHeader';
 
 function SearchField({ label, children }: { label: string; children: React.ReactNode }) {
   return (
@@ -47,21 +47,7 @@ export default function VehicleSearch() {
 
   return (
     <div className="min-h-screen w-full bg-[#f3f3f3]">
-      <header className="flex h-[72px] items-center justify-between bg-[#76c573] px-4 shadow-[0px_4px_25px_rgba(0,0,0,0.18)] sm:px-6">
-        <div>
-          <p className="text-lg font-semibold text-white">SUMMS Vehicle Search</p>
-          <p className="text-xs text-white/80">Browse, compare, and reserve mobility options</p>
-        </div>
-
-        <div className="flex items-center gap-3">
-          <img src={imgAdminLogo} alt="Admin" className="h-9 w-9 object-contain sm:h-10 sm:w-10" />
-          <div className="flex h-9 w-9 items-center justify-center rounded-full bg-[#165713] text-white sm:h-10 sm:w-10">
-            <svg viewBox="0 0 24 24" className="h-5 w-5" fill="currentColor" aria-hidden="true">
-              <path d="M12 12c2.761 0 5-2.239 5-5s-2.239-5-5-5-5 2.239-5 5 2.239 5 5 5Zm0 2c-3.866 0-7 3.134-7 7 0 .552.448 1 1 1h12c.552 0 1-.448 1-1 0-3.866-3.134-7-7-7Z" />
-            </svg>
-          </div>
-        </div>
-      </header>
+      <AppHeader />
 
       <main className="relative px-4 py-8 sm:px-6 lg:px-8">
         <img

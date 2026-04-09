@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import imgLogo from "../assets/logo.png";
 import imgAdminLogo from "../assets/adminLogo.png";
 import { getAnalytics } from "../services/analyticsService";
+import AppHeader from '../component/AppHeader';
 
 const Home: React.FC = () => {
   const navigate = useNavigate();
@@ -15,32 +16,7 @@ const Home: React.FC = () => {
 
   return (
     <div className="min-h-screen w-full bg-[#f3f3f3]">
-
-   
-      <nav className="bg-[#76c573] shadow-[0px_4px_25px_rgba(0,0,0,0.18)]">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex justify-between items-center">
-          <h1 className="text-2xl font-bold text-white tracking-wide">SUMMS</h1>
-          <div className="flex items-center gap-6">
-            <ul className="flex gap-6">
-              <li><a href="#features" className="text-white/80 hover:text-white transition text-sm font-medium">Features</a></li>
-              <li><a href="#about"    className="text-white/80 hover:text-white transition text-sm font-medium">About</a></li>
-            </ul>
-           
-            <button
-              onClick={() => navigate("/user")}
-              className="flex items-center gap-3"
-            >
-              <img src={imgAdminLogo} alt="Admin" className="h-9 w-9 object-contain" />
-              <div className="flex h-9 w-9 items-center justify-center rounded-full bg-[#165713] text-white">
-                <svg viewBox="0 0 24 24" className="h-5 w-5" fill="currentColor">
-                  <path d="M12 12c2.761 0 5-2.239 5-5s-2.239-5-5-5-5 2.239-5 5 2.239 5 5 5Zm0 2c-3.866 0-7 3.134-7 7 0 .552.448 1 1 1h12c.552 0 1-.448 1-1 0-3.866-3.134-7-7-7Z" />
-                </svg>
-              </div>
-            </button>
-          </div>
-        </div>
-      </nav>
-
+      <AppHeader />
      
       <section className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-24 text-center overflow-hidden">
         {/* watermark */}

@@ -2,6 +2,7 @@ import { useState } from "react";
 import imgLogo from "../assets/logo.png";
 import imgAdminLogo from "../assets/adminLogo.png";
 import { useNavigate } from "react-router-dom";
+import type Client from "../types/user";
 import { registerClient } from "../services/userService";
 
 type SignUpProps = {
@@ -58,23 +59,20 @@ export default function SignUp({ onLogin, onSignUp }: SignUpProps) {
   };
 
   const handleSignUp = () => {
-    if (!firstName || !lastName || !email || !password) {
-      alert("Please fill in all fields.");
-      return;
-    }
-
     if (onSignUp) {
       onSignUp(firstName, lastName, email, password);
       return;
     }
 
-    const result = registerClient(
-      firstName,
-      lastName,
-      email,
-      password,
-      "provider"
-    );
+    let role: Client["role"] = "user";
+
+    if (email.toLowerCase().includes("@admin")) {
+      role = "admin";
+    } else if (email.toLowerCase().includes("@provider")) {
+      role = "provider";
+    }
+
+    const result = registerClient(firstName, lastName, email, password, role);
 
     alert(result.message);
 

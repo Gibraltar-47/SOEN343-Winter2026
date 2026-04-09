@@ -1,8 +1,8 @@
 import React from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import imgLogo from '../assets/logo.png';
-import imgAdminLogo from '../assets/adminLogo.png';
 import { getAllVehicles } from '../services/providerVehicleService';
+import AppHeader from '../component/AppHeader';
 
 export default function VehicleDetails() {
   const navigate = useNavigate();
@@ -16,6 +16,7 @@ export default function VehicleDetails() {
   if (!vehicle) {
     return (
       <div className="min-h-screen bg-[#f3f3f3]">
+        <AppHeader />
         <main className="flex min-h-screen items-center justify-center px-4">
           <div className="w-full max-w-xl rounded-[28px] border-2 border-white/80 bg-white/80 p-8 text-center shadow-[0px_4px_26px_rgba(0,0,0,0.10)]">
             <h1 className="text-3xl font-semibold text-[#297525]">Vehicle not found</h1>
@@ -33,23 +34,20 @@ export default function VehicleDetails() {
 
   return (
     <div className="min-h-screen bg-[#f3f3f3]">
-      <header className="flex h-[72px] items-center justify-between bg-[#76c573] px-4 shadow-[0px_4px_25px_rgba(0,0,0,0.18)] sm:px-6">
-        <div>
-          <p className="text-lg font-semibold text-white">SUMMS Vehicle Details</p>
-          <p className="text-xs text-white/80">Review vehicle information before reserving</p>
-        </div>
+      <AppHeader />
 
-        <div className="flex items-center gap-3">
-          <img src={imgAdminLogo} alt="Admin" className="h-9 w-9 object-contain sm:h-10 sm:w-10" />
-          <div className="flex h-9 w-9 items-center justify-center rounded-full bg-[#165713] text-white sm:h-10 sm:w-10">
-            <svg viewBox="0 0 24 24" className="h-5 w-5" fill="currentColor" aria-hidden="true">
-              <path d="M12 12c2.761 0 5-2.239 5-5s-2.239-5-5-5-5 2.239-5 5 2.239 5 5 5Zm0 2c-3.866 0-7 3.134-7 7 0 .552.448 1 1 1h12c.552 0 1-.448 1-1 0-3.866-3.134-7-7-7Z" />
+      <main className="relative px-4 py-4 sm:px-6 lg:px-8">
+        <div className="relative z-10 mx-auto max-w-6xl">
+          <button
+            onClick={() => navigate("/vehicle-search")}
+            className="mb-4 flex items-center gap-2 text-sm font-semibold text-[#165713] transition hover:text-[#0f3f0d]"
+          >
+            <svg viewBox="0 0 24 24" className="h-4 w-4" fill="currentColor">
+              <path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z" />
             </svg>
-          </div>
+            Back to Search
+          </button>
         </div>
-      </header>
-
-      <main className="relative px-4 py-8 sm:px-6 lg:px-8">
         <img
           src={imgLogo}
           alt=""
@@ -68,13 +66,6 @@ export default function VehicleDetails() {
                   {vehicle.type} · {vehicle.city}, {vehicle.region} · {vehicle.provider}
                 </p>
               </div>
-
-              <button
-                onClick={() => navigate('/vehicle-search')}
-                className="rounded-full bg-white px-5 py-3 text-sm font-semibold text-[#297525] shadow hover:bg-gray-100"
-              >
-                Back to Search
-              </button>
             </div>
 
             <div className="grid grid-cols-1 gap-6 lg:grid-cols-[280px,1fr]">
@@ -152,12 +143,6 @@ export default function VehicleDetails() {
             </div>
 
             <div className="mt-8 flex flex-wrap gap-3">
-              <button
-                onClick={() => navigate('/vehicle-search')}
-                className="rounded-full bg-white px-6 py-3 text-sm font-semibold text-[#297525] shadow hover:bg-gray-100"
-              >
-                Back to Search
-              </button>
 
               <button
                 onClick={() => 
