@@ -2,8 +2,16 @@ import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import imgLogo from "../assets/logo.png";
 import { sessionService } from "../services/sessionService";
-import { safetyModeService, type SafetyShareSession } from "../services/safetyModeService";
+import {
+  safetyModeService,
+  type SafetyShareSession,
+} from "../services/safetyModeService";
 import AppHeader from "../component/AppHeader";
+import {
+  recordRentalStarted,
+  recordRentalCompleted,
+  recordRentalCancelled,
+} from "../services/analyticsService";
 
 type RentalStatus = "reserved" | "active" | "completed" | "cancelled";
 
@@ -84,7 +92,7 @@ function formatDate(value?: string) {
 function calculateCompletedTotal(
   pricePerHour: number,
   startedAt?: string,
-  endedAt?: string,
+  endedAt?: string
 ) {
   if (!startedAt || !endedAt) return 0;
 
@@ -142,9 +150,12 @@ export default function ManageMyRentals() {
 
   function handleStartRental(rentalId: string) {
     const allRentals = getStoredRentals();
+    let started = false;
 
     const updatedRentals = allRentals.map((rental) => {
       if (rental.id !== rentalId || rental.status !== "reserved") return rental;
+
+      started = true;
 
       return {
         ...rental,
@@ -154,6 +165,11 @@ export default function ManageMyRentals() {
     });
 
     saveStoredRentals(updatedRentals);
+
+    if (started) {
+      recordRentalStarted();
+    }
+
     safetyModeService.startLiveSharing(rentalId);
     refreshRentals();
     setMessage("Rental started. Trusted contacts were notified that live sharing began.");
@@ -161,15 +177,18 @@ export default function ManageMyRentals() {
 
   function handleCompleteRental(rentalId: string) {
     const allRentals = getStoredRentals();
+    let completed = false;
 
     const updatedRentals = allRentals.map((rental) => {
       if (rental.id !== rentalId || rental.status !== "active") return rental;
+
+      completed = true;
 
       const endedAt = new Date().toISOString();
       const total = calculateCompletedTotal(
         rental.pricePerHour,
         rental.startedAt,
-        endedAt,
+        endedAt
       );
 
       return {
@@ -181,6 +200,11 @@ export default function ManageMyRentals() {
     });
 
     saveStoredRentals(updatedRentals);
+
+    if (completed) {
+      recordRentalCompleted();
+    }
+
     safetyModeService.stopLiveSharing(rentalId);
     refreshRentals();
     setMessage("Rental completed. You can now only review the trip summary.");
@@ -188,10 +212,15 @@ export default function ManageMyRentals() {
 
   function handleCancelRental(rentalId: string) {
     const allRentals = getStoredRentals();
+    let cancelledActiveRental = false;
 
     const updatedRentals = allRentals.map((rental) => {
       if (rental.id !== rentalId) return rental;
       if (rental.status === "completed" || rental.status === "cancelled") return rental;
+
+      if (rental.status === "active") {
+        cancelledActiveRental = true;
+      }
 
       return {
         ...rental,
@@ -201,6 +230,11 @@ export default function ManageMyRentals() {
     });
 
     saveStoredRentals(updatedRentals);
+
+    if (cancelledActiveRental) {
+      recordRentalCancelled(true);
+    }
+
     safetyModeService.stopLiveSharing(rentalId);
     refreshRentals();
     setMessage("Rental cancelled and live sharing stopped.");
@@ -255,7 +289,7 @@ export default function ManageMyRentals() {
 
   function handleStageUpdate(
     rentalId: string,
-    stage: "En route" | "Near destination" | "Arrived safely",
+    stage: "En route" | "Near destination" | "Arrived safely"
   ) {
     const updated = safetyModeService.updateStage(rentalId, stage);
 
@@ -336,10 +370,18 @@ export default function ManageMyRentals() {
                               <h2 className="text-2xl font-semibold text-[#297525]">
                                 {rental.vehicleName}
                               </h2>
-                              <span className={`rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-wide ${getStatusClasses(rental.status)}`}>
+                              <span
+                                className={`rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-wide ${getStatusClasses(
+                                  rental.status
+                                )}`}
+                              >
                                 {rental.status}
                               </span>
-                              <span className={`rounded-full px-3 py-1 text-xs font-semibold tracking-wide ${getSafetyBadgeClasses(safetySession)}`}>
+                              <span
+                                className={`rounded-full px-3 py-1 text-xs font-semibold tracking-wide ${getSafetyBadgeClasses(
+                                  safetySession
+                                )}`}
+                              >
                                 {buildSharedWithText(safetySession)}
                               </span>
                             </div>
@@ -380,12 +422,16 @@ export default function ManageMyRentals() {
 
                               <div className="grid gap-x-8 gap-y-3 md:grid-cols-3">
                                 <div>
-                                  <p className="text-xs uppercase tracking-wide text-gray-400">Stage</p>
+                                  <p className="text-xs uppercase tracking-wide text-gray-400">
+                                    Stage
+                                  </p>
                                   <p className="mt-1 font-medium">{safetySession.stage}</p>
                                 </div>
 
                                 <div>
-                                  <p className="text-xs uppercase tracking-wide text-gray-400">Shared with</p>
+                                  <p className="text-xs uppercase tracking-wide text-gray-400">
+                                    Shared with
+                                  </p>
                                   <p className="mt-1 font-medium">
                                     {safetySession.trustedContacts
                                       .map((contact) => contact.fullName)
@@ -394,23 +440,39 @@ export default function ManageMyRentals() {
                                 </div>
 
                                 <div>
-                                  <p className="text-xs uppercase tracking-wide text-gray-400">Expected return</p>
-                                  <p className="mt-1 font-medium">{formatDate(safetySession.expectedReturnAt)}</p>
+                                  <p className="text-xs uppercase tracking-wide text-gray-400">
+                                    Expected return
+                                  </p>
+                                  <p className="mt-1 font-medium">
+                                    {formatDate(safetySession.expectedReturnAt)}
+                                  </p>
                                 </div>
 
                                 <div>
-                                  <p className="text-xs uppercase tracking-wide text-gray-400">Last update</p>
-                                  <p className="mt-1 font-medium">{formatDate(safetySession.lastUpdatedAt)}</p>
+                                  <p className="text-xs uppercase tracking-wide text-gray-400">
+                                    Last update
+                                  </p>
+                                  <p className="mt-1 font-medium">
+                                    {formatDate(safetySession.lastUpdatedAt)}
+                                  </p>
                                 </div>
 
                                 <div>
-                                  <p className="text-xs uppercase tracking-wide text-gray-400">Contacts notified</p>
-                                  <p className="mt-1 font-medium">{safetySession.trustedContacts.length}</p>
+                                  <p className="text-xs uppercase tracking-wide text-gray-400">
+                                    Contacts notified
+                                  </p>
+                                  <p className="mt-1 font-medium">
+                                    {safetySession.trustedContacts.length}
+                                  </p>
                                 </div>
 
                                 <div>
-                                  <p className="text-xs uppercase tracking-wide text-gray-400">Total messages</p>
-                                  <p className="mt-1 font-medium">{safetySession.notifications.length}</p>
+                                  <p className="text-xs uppercase tracking-wide text-gray-400">
+                                    Total messages
+                                  </p>
+                                  <p className="mt-1 font-medium">
+                                    {safetySession.notifications.length}
+                                  </p>
                                 </div>
                               </div>
                             </div>
@@ -534,47 +596,63 @@ export default function ManageMyRentals() {
                                 <p className="mt-3 text-xs text-gray-500">
                                   Live sharing begins automatically when the rental starts.
                                 </p>
-                              ) : null}
+                              ) : (
+                                <p className="mt-3 text-xs text-gray-500">
+                                  Contacts are being notified in real time as you travel.
+                                </p>
+                              )}
                             </div>
 
                             <div className="rounded-2xl bg-[#fafafa] p-4">
                               <p className="mb-3 text-sm font-semibold text-[#297525]">
-                                Update Trip
+                                Trip Updates
                               </p>
 
-                              {!isClosed && safetySession?.isLive ? (
-                                <>
-                                  <div className="flex flex-wrap gap-2">
-                                    <button
-                                      onClick={() => handleStageUpdate(rental.id, "En route")}
-                                      className={`${stageBtn} bg-[#5f95eb]`}
-                                    >
-                                      En Route
-                                    </button>
-                                    <button
-                                      onClick={() => handleStageUpdate(rental.id, "Near destination")}
-                                      className={`${stageBtn} bg-[#4c8b2c]`}
-                                    >
-                                      Near Destination
-                                    </button>
-                                    <button
-                                      onClick={() => handleStageUpdate(rental.id, "Arrived safely")}
-                                      className={`${stageBtn} bg-[#2f6d18]`}
-                                    >
-                                      Arrived Safely
-                                    </button>
-                                  </div>
-                                  <p className="mt-3 text-xs text-gray-500">
-                                    Each update immediately notifies trusted contacts.
-                                  </p>
-                                </>
-                              ) : (
-                                <p className="text-xs text-gray-500">
-                                  {isClosed
-                                    ? "Trip updates are no longer available after the rental ends."
-                                    : "Trip updates become available during live sharing."}
-                                </p>
-                              )}
+                              <div className="flex flex-wrap gap-2">
+                                <button
+                                  onClick={() => handleStageUpdate(rental.id, "En route")}
+                                  disabled={!safetySession?.isLive || isClosed}
+                                  className={`${stageBtn} ${
+                                    !safetySession?.isLive || isClosed
+                                      ? "cursor-not-allowed bg-gray-300"
+                                      : "bg-[#41a7ff]"
+                                  }`}
+                                >
+                                  En route
+                                </button>
+
+                                <button
+                                  onClick={() =>
+                                    handleStageUpdate(rental.id, "Near destination")
+                                  }
+                                  disabled={!safetySession?.isLive || isClosed}
+                                  className={`${stageBtn} ${
+                                    !safetySession?.isLive || isClosed
+                                      ? "cursor-not-allowed bg-gray-300"
+                                      : "bg-[#8a6d1f]"
+                                  }`}
+                                >
+                                  Near destination
+                                </button>
+
+                                <button
+                                  onClick={() =>
+                                    handleStageUpdate(rental.id, "Arrived safely")
+                                  }
+                                  disabled={!safetySession?.isLive || isClosed}
+                                  className={`${stageBtn} ${
+                                    !safetySession?.isLive || isClosed
+                                      ? "cursor-not-allowed bg-gray-300"
+                                      : "bg-[#165713]"
+                                  }`}
+                                >
+                                  Arrived safely
+                                </button>
+                              </div>
+
+                              <p className="mt-3 text-xs text-gray-500">
+                                Updating a stage immediately notifies trusted contacts.
+                              </p>
                             </div>
                           </div>
                         </div>

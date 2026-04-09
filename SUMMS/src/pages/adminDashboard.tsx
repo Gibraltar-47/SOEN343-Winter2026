@@ -1,13 +1,38 @@
-import { useMemo } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import imgLogo from "../assets/logo.png";
 import AppHeader from "../component/AppHeader";
 import { getAdminDashboardSummary } from "../services/adminDashboardService";
 
+type AdminDashboardSummary = ReturnType<typeof getAdminDashboardSummary>;
+
 export default function AdminDashboard() {
   const navigate = useNavigate();
 
-  const summary = useMemo(() => getAdminDashboardSummary(), []);
+  const [summary, setSummary] = useState<AdminDashboardSummary>(
+    getAdminDashboardSummary()
+  );
+
+  useEffect(() => {
+    function refreshDashboard() {
+      setSummary(getAdminDashboardSummary());
+    }
+
+    refreshDashboard();
+
+    const interval = setInterval(refreshDashboard, 2000);
+
+    function handleWindowFocus() {
+      refreshDashboard();
+    }
+
+    window.addEventListener("focus", handleWindowFocus);
+
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener("focus", handleWindowFocus);
+    };
+  }, []);
 
   return (
     <div className="min-h-screen w-full bg-[#f3f3f3]">
@@ -38,6 +63,7 @@ export default function AdminDashboard() {
             </p>
           </div>
 
+          {/* same analytics cards that used to be on Home */}
           <section className="grid grid-cols-1 gap-4 md:grid-cols-4">
             <div className="rounded-[24px] p-6 bg-white shadow text-center">
               <p className="text-sm text-gray-500">Active Rentals</p>
