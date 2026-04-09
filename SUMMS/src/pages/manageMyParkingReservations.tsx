@@ -99,6 +99,13 @@ export default function ManageMyParkingReservations() {
                 <p className="text-center text-sm text-gray-500">
                   View or cancel your parking reservations.
                 </p>
+
+                <button
+                  onClick={() => navigate("/parking")}
+                  className="mt-2 rounded-full bg-[#165713] px-5 py-2 text-sm font-semibold text-white transition hover:bg-[#11440f]"
+                >
+                  Go to Parking
+                </button>
               </div>
 
               {message ? (
@@ -161,13 +168,6 @@ export default function ManageMyParkingReservations() {
                               className="rounded-full bg-[#d4183d] px-5 py-2 text-sm font-semibold text-white transition hover:opacity-90"
                             >
                               Cancel Reservation
-                            </button>
-
-                            <button
-                              onClick={() => navigate("/parking")}
-                              className="rounded-full bg-[#165713] px-5 py-2 text-sm font-semibold text-white transition hover:bg-[#11440f]"
-                            >
-                              Go to Parking
                             </button>
                           </div>
                         </div>
