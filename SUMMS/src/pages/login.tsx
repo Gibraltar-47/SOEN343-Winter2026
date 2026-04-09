@@ -59,8 +59,7 @@ export default function Login({ onLogin, onSignUp }: LoginProps) {
     }
     navigate(sessionService.getDashboardRoute());
   };
-
-  const handleSignUp = () => {
+    const handleSignUp = () => {
     if (onSignUp) {
       onSignUp(email, password);
       return;
@@ -142,7 +141,6 @@ export default function Login({ onLogin, onSignUp }: LoginProps) {
                 Log In
               </button>
             </div>
-
             <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:justify-center">
               <button
                 onClick={handleSignUp}
