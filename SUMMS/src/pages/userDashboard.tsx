@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import imgLogo from "../assets/logo.png";
 import { sessionService } from "../services/sessionService";
-import AppHeader from '../component/AppHeader';
+import AppHeader from "../component/AppHeader";
 
 type UserPreferences = {
   preferredCity: string;
@@ -139,6 +139,18 @@ export default function UserDashboard() {
                   </p>
                   <p className="text-sm text-gray-400">
                     Start, complete, or cancel your reservations.
+                  </p>
+                </button>
+
+                <button
+                  onClick={() => navigate("/my-parking-reservations")}
+                  className="rounded-full border-2 border-white/80 bg-white/70 px-6 py-4 text-left shadow-[0px_4px_16px_rgba(0,0,0,0.08)] transition hover:scale-[1.01]"
+                >
+                  <p className="text-base font-semibold text-[#297525]">
+                    Manage My Parking Reservations
+                  </p>
+                  <p className="text-sm text-gray-400">
+                    View or cancel your parking reservations.
                   </p>
                 </button>
               </div>

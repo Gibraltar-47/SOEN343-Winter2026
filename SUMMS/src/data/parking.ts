@@ -12,8 +12,13 @@ export type ParkingLot = {
 
 export type ParkingReservation = {
   id: string;
+  userId: string;
+  userName: string;
   lotId: string;
   lotName: string;
+  city: string;
+  area: string;
+  address: string;
   reservedAt: string;
   pricePerHour: number;
 };

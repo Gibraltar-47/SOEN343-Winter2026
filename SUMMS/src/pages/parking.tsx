@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import imgLogo from "../assets/logo.png";
 import AppHeader from "../component/AppHeader";
+import { sessionService } from "../services/sessionService";
 import {
   parkingLots,
   simulateParkingUpdates,
@@ -11,21 +12,42 @@ import {
 import {
   addParkingReservation,
   getParkingReservations,
-  removeParkingReservation,
 } from "../services/parkingStorage";
 
-const AREAS = ["All", "Downtown", "Old Montreal", "Le Plateau", "Laval", "Côte-des-Neiges"];
+const AREAS = [
+  "All",
+  "Downtown",
+  "Old Montreal",
+  "Le Plateau",
+  "Laval",
+  "Côte-des-Neiges",
+];
 
 export default function Parking() {
   const navigate = useNavigate();
+  const currentUser = sessionService.getCurrentUser();
 
   const [lots, setLots] = useState<ParkingLot[]>(parkingLots);
   const [selectedArea, setSelectedArea] = useState("All");
   const [reservations, setReservations] = useState<ParkingReservation[]>([]);
+  const [message, setMessage] = useState("");
 
   useEffect(() => {
-    setReservations(getParkingReservations());
-  }, []);
+    const allReservations = getParkingReservations();
+
+    if (!currentUser) {
+      setReservations([]);
+      return;
+    }
+
+    const currentUserId = String(currentUser.id).trim();
+
+    const userReservations = allReservations.filter(
+      (reservation) => String(reservation.userId).trim() === currentUserId
+    );
+
+    setReservations(userReservations);
+  }, [currentUser]);
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -53,43 +75,46 @@ export default function Parking() {
   const totalReserved = totalSpots - totalAvailable;
 
   const hasReservationForLot = (lotId: string) =>
-    reservations.some((r) => r.lotId === lotId);
+    reservations.some((reservation) => reservation.lotId === lotId);
 
   const handleReserve = (lot: ParkingLot) => {
+    if (!currentUser) {
+      setMessage("Please log in to reserve a parking spot.");
+      return;
+    }
+
     if (lot.availableSpots <= 0) return;
     if (hasReservationForLot(lot.id)) return;
 
     const reservation: ParkingReservation = {
-      id: `reservation-${Date.now()}`,
+      id: `parking-${Date.now()}`,
+      userId: String(currentUser.id),
+      userName: `${currentUser.firstName} ${currentUser.lastName}`,
       lotId: lot.id,
       lotName: lot.name,
+      city: lot.area === "Laval" ? "Laval" : "Montreal",
+      area: lot.area,
+      address: lot.address,
       reservedAt: new Date().toISOString(),
       pricePerHour: lot.pricePerHour,
     };
 
     addParkingReservation(reservation);
-    setReservations(getParkingReservations());
+
+    const allReservations = getParkingReservations();
+    const currentUserId = String(currentUser.id).trim();
+
+    const userReservations = allReservations.filter(
+      (item) => String(item.userId).trim() === currentUserId
+    );
+
+    setReservations(userReservations);
+    setMessage("Parking reservation created successfully.");
 
     setLots((prev) =>
       prev.map((item) =>
         item.id === lot.id
           ? { ...item, availableSpots: Math.max(0, item.availableSpots - 1) }
-          : item
-      )
-    );
-  };
-
-  const handleCancelReservation = (reservationId: string, lotId: string) => {
-    removeParkingReservation(reservationId);
-    setReservations(getParkingReservations());
-
-    setLots((prev) =>
-      prev.map((item) =>
-        item.id === lotId
-          ? {
-              ...item,
-              availableSpots: Math.min(item.totalSpots, item.availableSpots + 1),
-            }
           : item
       )
     );
@@ -120,15 +145,23 @@ export default function Parking() {
               </h1>
 
               <p className="max-w-xl text-sm text-gray-500">
-                Real-time monitoring of parking availability, pricing, and reservations
-                across Montreal and Laval.
+                Real-time monitoring of parking availability, pricing, and
+                reservations across Montreal and Laval.
               </p>
             </div>
+
+            {message ? (
+              <div className="w-full rounded-full bg-white/80 px-5 py-3 text-center text-sm text-[#297525] shadow-[0px_4px_16px_rgba(0,0,0,0.08)]">
+                {message}
+              </div>
+            ) : null}
 
             <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
               <div className="rounded-[24px] border-2 border-white/80 bg-white/80 p-6 shadow-[0px_4px_20px_rgba(0,0,0,0.08)] backdrop-blur-[6px]">
                 <p className="text-sm text-gray-500">Total Spots</p>
-                <p className="mt-2 text-3xl font-semibold text-[#297525]">{totalSpots}</p>
+                <p className="mt-2 text-3xl font-semibold text-[#297525]">
+                  {totalSpots}
+                </p>
               </div>
 
               <div className="rounded-[24px] border-2 border-white/80 bg-white/80 p-6 shadow-[0px_4px_20px_rgba(0,0,0,0.08)] backdrop-blur-[6px]">
@@ -149,137 +182,110 @@ export default function Parking() {
             <div className="rounded-[24px] border-2 border-white/80 bg-white/80 p-5 shadow-[0px_4px_20px_rgba(0,0,0,0.08)]">
               <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
                 <div>
-                  <p className="text-lg font-semibold text-[#297525]">Filter by area</p>
+                  <p className="text-lg font-semibold text-[#297525]">
+                    Filter by area
+                  </p>
                   <p className="text-sm text-gray-500">
                     View parking availability by location
                   </p>
                 </div>
 
-                <select
-                  value={selectedArea}
-                  onChange={(e) => setSelectedArea(e.target.value)}
-                  className="h-11 rounded-full border border-gray-200 bg-white px-4 text-sm outline-none"
-                >
-                  {AREAS.map((area) => (
-                    <option key={area} value={area}>
-                      {area}
-                    </option>
-                  ))}
-                </select>
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+                  <select
+                    value={selectedArea}
+                    onChange={(e) => setSelectedArea(e.target.value)}
+                    className="h-11 rounded-full border border-gray-200 bg-white px-4 text-sm outline-none"
+                  >
+                    {AREAS.map((area) => (
+                      <option key={area} value={area}>
+                        {area}
+                      </option>
+                    ))}
+                  </select>
+
+                  <button
+                    onClick={() => navigate("/my-parking-reservations")}
+                    className="h-11 rounded-full bg-[#165713] px-5 text-sm font-semibold text-white transition hover:bg-[#11440f]"
+                  >
+                    Manage My Parking Reservations
+                  </button>
+                </div>
               </div>
             </div>
 
-            <div className="grid grid-cols-1 gap-5 lg:grid-cols-[2fr_1fr]">
-              <section className="flex flex-col gap-4">
-                {filteredLots.map((lot) => {
-                  const reserved = hasReservationForLot(lot.id);
-                  const full = lot.availableSpots === 0;
+            <section className="flex flex-col gap-4">
+              {filteredLots.map((lot) => {
+                const reserved = hasReservationForLot(lot.id);
+                const full = lot.availableSpots === 0;
 
-                  return (
-                    <div
-                      key={lot.id}
-                      className="rounded-[24px] border-2 border-white/80 bg-[linear-gradient(147deg,rgba(223,223,223,0.69)_2.7%,rgba(245,245,245,0.96)_75.2%,rgba(255,255,255,0.41)_98.8%)] p-5 shadow-[0px_4px_20px_rgba(0,0,0,0.08)] backdrop-blur-[6px]"
-                    >
-                      <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-                        <div className="space-y-1">
-                          <div className="flex items-center gap-2">
-                            <p className="text-lg font-semibold text-[#297525]">{lot.name}</p>
-                            <span className="rounded-full bg-[#e9f8e8] px-3 py-1 text-xs font-medium text-[#297525]">
-                              {lot.area}
-                            </span>
-                          </div>
-
-                          <p className="text-sm text-gray-500">{lot.address}</p>
-
-                          <div className="mt-2 flex flex-wrap gap-3 text-sm text-gray-600">
-                            <span>
-                              <strong>Available:</strong> {lot.availableSpots}/{lot.totalSpots}
-                            </span>
-                            <span>
-                              <strong>Price:</strong> ${lot.pricePerHour.toFixed(2)}/hr
-                            </span>
-                          </div>
+                return (
+                  <div
+                    key={lot.id}
+                    className="rounded-[24px] border-2 border-white/80 bg-[linear-gradient(147deg,rgba(223,223,223,0.69)_2.7%,rgba(245,245,245,0.96)_75.2%,rgba(255,255,255,0.41)_98.8%)] p-5 shadow-[0px_4px_20px_rgba(0,0,0,0.08)] backdrop-blur-[6px]"
+                  >
+                    <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+                      <div className="space-y-1">
+                        <div className="flex items-center gap-2">
+                          <p className="text-lg font-semibold text-[#297525]">
+                            {lot.name}
+                          </p>
+                          <span className="rounded-full bg-[#e9f8e8] px-3 py-1 text-xs font-medium text-[#297525]">
+                            {lot.area}
+                          </span>
                         </div>
 
-                        <div className="flex flex-col items-start gap-2 md:items-end">
-                          <span
-                            className={`rounded-full px-3 py-1 text-xs font-semibold ${
-                              full
-                                ? "bg-red-100 text-red-600"
-                                : lot.availableSpots <= 5
-                                ? "bg-yellow-100 text-yellow-700"
-                                : "bg-green-100 text-green-700"
-                            }`}
-                          >
-                            {full
-                              ? "Full"
-                              : lot.availableSpots <= 5
-                              ? "Limited"
-                              : "Available"}
-                          </span>
+                        <p className="text-sm text-gray-500">{lot.address}</p>
 
-                          <button
-                            onClick={() => handleReserve(lot)}
-                            disabled={full || reserved}
-                            className={`h-11 rounded-full px-6 text-sm font-semibold text-white transition ${
-                              full || reserved
-                                ? "cursor-not-allowed bg-gray-400"
-                                : "bg-[#76c573] hover:bg-[#5fb85c]"
-                            }`}
-                          >
-                            {reserved ? "Reserved" : full ? "Unavailable" : "Reserve Spot"}
-                          </button>
+                        <div className="mt-2 flex flex-wrap gap-3 text-sm text-gray-600">
+                          <span>
+                            <strong>Available:</strong> {lot.availableSpots}/
+                            {lot.totalSpots}
+                          </span>
+                          <span>
+                            <strong>Price:</strong> ${lot.pricePerHour.toFixed(2)}
+                            /hr
+                          </span>
                         </div>
                       </div>
-                    </div>
-                  );
-                })}
-              </section>
 
-              <aside className="rounded-[24px] border-2 border-white/80 bg-white/80 p-5 shadow-[0px_4px_20px_rgba(0,0,0,0.08)]">
-                <div className="mb-4">
-                  <p className="text-lg font-semibold text-[#297525]">My Reservations</p>
-                  <p className="text-sm text-gray-500">
-                    Your saved parking reservations
-                  </p>
-                </div>
-
-                <div className="flex flex-col gap-3">
-                  {reservations.length === 0 ? (
-                    <div className="rounded-[18px] bg-[#f7f7f7] p-4 text-sm text-gray-500">
-                      No reservations yet.
-                    </div>
-                  ) : (
-                    reservations.map((reservation) => (
-                      <div
-                        key={reservation.id}
-                        className="rounded-[18px] border border-gray-100 bg-[#f9fdf8] p-4"
-                      >
-                        <p className="font-semibold text-[#297525]">
-                          {reservation.lotName}
-                        </p>
-                        <p className="mt-1 text-sm text-gray-500">
-                          ${reservation.pricePerHour.toFixed(2)}/hr
-                        </p>
-                        <p className="mt-1 text-xs text-gray-400">
-                          Reserved on{" "}
-                          {new Date(reservation.reservedAt).toLocaleString()}
-                        </p>
+                      <div className="flex flex-col items-start gap-2 md:items-end">
+                        <span
+                          className={`rounded-full px-3 py-1 text-xs font-semibold ${
+                            full
+                              ? "bg-red-100 text-red-600"
+                              : lot.availableSpots <= 5
+                              ? "bg-yellow-100 text-yellow-700"
+                              : "bg-green-100 text-green-700"
+                          }`}
+                        >
+                          {full
+                            ? "Full"
+                            : lot.availableSpots <= 5
+                            ? "Limited"
+                            : "Available"}
+                        </span>
 
                         <button
-                          onClick={() =>
-                            handleCancelReservation(reservation.id, reservation.lotId)
-                          }
-                          className="mt-3 rounded-full bg-red-500 px-4 py-2 text-xs font-semibold text-white hover:bg-red-600"
+                          onClick={() => handleReserve(lot)}
+                          disabled={full || reserved}
+                          className={`h-11 rounded-full px-6 text-sm font-semibold text-white transition ${
+                            full || reserved
+                              ? "cursor-not-allowed bg-gray-400"
+                              : "bg-[#76c573] hover:bg-[#5fb85c]"
+                          }`}
                         >
-                          Cancel Reservation
+                          {reserved
+                            ? "Reserved"
+                            : full
+                            ? "Unavailable"
+                            : "Reserve Spot"}
                         </button>
                       </div>
-                    ))
-                  )}
-                </div>
-              </aside>
-            </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </section>
           </div>
         </main>
       </div>

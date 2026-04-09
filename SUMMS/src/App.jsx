@@ -13,6 +13,7 @@ import ManageVehicles from "./pages/manageVehicles";
 import ManageRentals from "./pages/manageRentals";
 import UserDashboard from "./pages/userDashboard";
 import ManageMyRentals from "./pages/manageMyRentals";
+import ManageMyParkingReservations from "./pages/manageMyParkingReservations";
 import ProviderProfit from "./pages/providerProfit";
 
 export default function App() {
@@ -32,6 +33,7 @@ export default function App() {
       <Route path="/provider/rentals" element={<ManageRentals />} />
       <Route path="/user" element={<UserDashboard />} />
       <Route path="/my-rentals" element={<ManageMyRentals />} />
+      <Route path="/my-parking-reservations" element={<ManageMyParkingReservations />}/>
       <Route path="/provider/profit" element={<ProviderProfit />} />
     </Routes>
   );
