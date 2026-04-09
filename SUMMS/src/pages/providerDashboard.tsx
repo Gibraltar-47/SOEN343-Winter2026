@@ -1,6 +1,6 @@
 import { useNavigate } from "react-router-dom";
 import imgLogo from "../assets/logo.png";
-import imgAdminLogo from "../assets/adminLogo.png";
+import AppHeader from "../component/AppHeader";
 
 export default function ProviderDashboard() {
   const navigate = useNavigate();
@@ -9,20 +9,7 @@ export default function ProviderDashboard() {
   return (
     <div className="min-h-screen w-full overflow-hidden bg-[#f3f3f3]">
       <div className="flex min-h-screen flex-col">
-        <header className="flex h-[72px] items-center justify-end bg-[#76c573] px-4 shadow-[0px_4px_25px_rgba(0,0,0,0.18)] sm:px-6">
-          <div className="flex items-center gap-3">
-            <img
-              src={imgAdminLogo}
-              alt="Provider"
-              className="h-9 w-9 object-contain sm:h-10 sm:w-10"
-            />
-            <div className="flex h-9 w-9 items-center justify-center rounded-full bg-[#165713] text-white sm:h-10 sm:w-10">
-              <svg viewBox="0 0 24 24" className="h-5 w-5" fill="currentColor">
-                <path d="M12 12c2.761 0 5-2.239 5-5s-2.239-5-5-5-5 2.239-5 5 2.239 5 5 5Zm0 2c-3.866 0-7 3.134-7 7 0 .552.448 1 1 1h12c.552 0 1-.448 1-1 0-3.866-3.134-7-7-7Z" />
-              </svg>
-            </div>
-          </div>
-        </header>
+        <AppHeader />
 
         <main className="relative flex flex-1 flex-col items-center px-4 py-12 sm:px-6 lg:px-8">
           <img

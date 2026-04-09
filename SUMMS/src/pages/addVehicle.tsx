@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import imgLogo from "../assets/logo.png";
-import imgAdminLogo from "../assets/adminLogo.png";
+import AppHeader from "../component/AppHeader";
 import type { VehicleFormData } from "../types/vehicle";
 import { addProviderVehicle } from "../services/providerVehicleService";
 import { sessionService } from "../services/sessionService";
@@ -66,31 +66,18 @@ export default function AddVehicle() {
 
   return (
     <div className="min-h-screen w-full overflow-hidden bg-[#f3f3f3]">
-      <div className="flex flex-col">
-        <header className="flex h-[72px] items-center justify-between bg-[#76c573] px-4 shadow-[0px_4px_25px_rgba(0,0,0,0.18)] sm:px-6">
-          <button
-            onClick={() => navigate("/provider")}
-            className="flex items-center gap-2 text-white transition hover:text-[#165713]"
-          >
-            <svg viewBox="0 0 24 24" className="h-5 w-5" fill="currentColor">
-              <path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z" />
-            </svg>
-            <span className="text-sm font-semibold">Back</span>
-          </button>
+      <AppHeader />
 
-          <div className="flex items-center gap-3">
-            <img
-              src={imgAdminLogo}
-              alt="Provider"
-              className="h-9 w-9 object-contain sm:h-10 sm:w-10"
-            />
-            <div className="flex h-9 w-9 items-center justify-center rounded-full bg-[#165713] text-white sm:h-10 sm:w-10">
-              <svg viewBox="0 0 24 24" className="h-5 w-5" fill="currentColor">
-                <path d="M12 12c2.761 0 5-2.239 5-5s-2.239-5-5-5-5 2.239-5 5 2.239 5 5 5Zm0 2c-3.866 0-7 3.134-7 7 0 .552.448 1 1 1h12c.552 0 1-.448 1-1 0-3.866-3.134-7-7-7Z" />
-              </svg>
-            </div>
-          </div>
-        </header>
+      <div className="mx-auto w-full max-w-7xl px-4 pt-4 sm:px-6">
+        <button
+          onClick={() => navigate("/provider")}
+          className="mb-4 flex items-center gap-2 text-sm font-semibold text-[#165713] transition hover:text-[#0f3f0d]"
+        >
+          <svg viewBox="0 0 24 24" className="h-4 w-4" fill="currentColor">
+            <path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z" />
+          </svg>
+          Back
+        </button>
 
         <main className="relative flex flex-1 flex-col items-center px-4 py-12 sm:px-6 lg:px-8">
           <img

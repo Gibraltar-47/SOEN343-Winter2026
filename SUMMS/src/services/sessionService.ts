@@ -24,9 +24,19 @@ function getDashboardRoute(): string {
   return "/home";
 }
 
+function getProfileRoute(): string {
+  const user = getCurrentUser();
+
+  if (!user) return "/";
+  if (user.role === "admin") return "/admin-dashboard";
+  if (user.role === "provider") return "/provider";
+  return "/user";
+}
+
 export const sessionService = {
   getCurrentUser,
   login,
   logout,
   getDashboardRoute,
+  getProfileRoute,
 };
