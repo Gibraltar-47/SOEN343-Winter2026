@@ -372,10 +372,54 @@ export default function ManageMyRentals() {
                             </div>
                           </div>
 
+                          {safetySession && (
+                            <div className="rounded-2xl border border-[#e6f2e6] bg-[#f9fcf9] p-5 text-sm text-gray-700 shadow-sm">
+                              <p className="mb-4 font-semibold text-[#297525]">
+                                Safety Mode Details
+                              </p>
+
+                              <div className="grid gap-x-8 gap-y-3 md:grid-cols-3">
+                                <div>
+                                  <p className="text-xs uppercase tracking-wide text-gray-400">Stage</p>
+                                  <p className="mt-1 font-medium">{safetySession.stage}</p>
+                                </div>
+
+                                <div>
+                                  <p className="text-xs uppercase tracking-wide text-gray-400">Shared with</p>
+                                  <p className="mt-1 font-medium">
+                                    {safetySession.trustedContacts
+                                      .map((contact) => contact.fullName)
+                                      .join(", ")}
+                                  </p>
+                                </div>
+
+                                <div>
+                                  <p className="text-xs uppercase tracking-wide text-gray-400">Expected return</p>
+                                  <p className="mt-1 font-medium">{formatDate(safetySession.expectedReturnAt)}</p>
+                                </div>
+
+                                <div>
+                                  <p className="text-xs uppercase tracking-wide text-gray-400">Last update</p>
+                                  <p className="mt-1 font-medium">{formatDate(safetySession.lastUpdatedAt)}</p>
+                                </div>
+
+                                <div>
+                                  <p className="text-xs uppercase tracking-wide text-gray-400">Contacts notified</p>
+                                  <p className="mt-1 font-medium">{safetySession.trustedContacts.length}</p>
+                                </div>
+
+                                <div>
+                                  <p className="text-xs uppercase tracking-wide text-gray-400">Total messages</p>
+                                  <p className="mt-1 font-medium">{safetySession.notifications.length}</p>
+                                </div>
+                              </div>
+                            </div>
+                          )}
+
                           <div className="grid gap-4 lg:grid-cols-3">
                             <div className="rounded-2xl bg-[#fafafa] p-4">
                               <p className="mb-3 text-sm font-semibold text-[#297525]">
-                                Rental Actions
+                                Manage Rental
                               </p>
                               <div className="flex flex-wrap gap-2">
                                 {rental.status === "reserved" && (
@@ -422,7 +466,7 @@ export default function ManageMyRentals() {
 
                             <div className="rounded-2xl bg-[#fafafa] p-4">
                               <p className="mb-3 text-sm font-semibold text-[#297525]">
-                                Safety Sharing
+                                Live Sharing
                               </p>
 
                               <div className="flex flex-wrap gap-2">
@@ -495,7 +539,7 @@ export default function ManageMyRentals() {
 
                             <div className="rounded-2xl bg-[#fafafa] p-4">
                               <p className="mb-3 text-sm font-semibold text-[#297525]">
-                                Trip Updates
+                                Update Trip
                               </p>
 
                               {!isClosed && safetySession?.isLive ? (
@@ -533,50 +577,6 @@ export default function ManageMyRentals() {
                               )}
                             </div>
                           </div>
-
-                          {safetySession && (
-                            <div className="rounded-2xl bg-[#f7faf7] p-5 text-sm text-gray-600">
-                              <p className="mb-4 font-semibold text-[#297525]">
-                                Safety Mode Details
-                              </p>
-
-                              <div className="grid gap-x-8 gap-y-3 md:grid-cols-3">
-                                <div>
-                                  <p className="text-xs uppercase tracking-wide text-gray-400">Stage</p>
-                                  <p className="mt-1 font-medium">{safetySession.stage}</p>
-                                </div>
-
-                                <div>
-                                  <p className="text-xs uppercase tracking-wide text-gray-400">Shared with</p>
-                                  <p className="mt-1 font-medium">
-                                    {safetySession.trustedContacts
-                                      .map((contact) => contact.fullName)
-                                      .join(", ")}
-                                  </p>
-                                </div>
-
-                                <div>
-                                  <p className="text-xs uppercase tracking-wide text-gray-400">Expected return</p>
-                                  <p className="mt-1 font-medium">{formatDate(safetySession.expectedReturnAt)}</p>
-                                </div>
-
-                                <div>
-                                  <p className="text-xs uppercase tracking-wide text-gray-400">Last update</p>
-                                  <p className="mt-1 font-medium">{formatDate(safetySession.lastUpdatedAt)}</p>
-                                </div>
-
-                                <div>
-                                  <p className="text-xs uppercase tracking-wide text-gray-400">Contacts notified</p>
-                                  <p className="mt-1 font-medium">{safetySession.trustedContacts.length}</p>
-                                </div>
-
-                                <div>
-                                  <p className="text-xs uppercase tracking-wide text-gray-400">Total messages</p>
-                                  <p className="mt-1 font-medium">{safetySession.notifications.length}</p>
-                                </div>
-                              </div>
-                            </div>
-                          )}
                         </div>
                       </div>
                     );
