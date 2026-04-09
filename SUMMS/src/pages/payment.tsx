@@ -3,6 +3,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import imgLogo from '../assets/logo.png';
 import { paymentService } from "../services/paymentService";
 import { sessionService } from "../services/sessionService";
+import { safetyModeService } from "../services/safetyModeService";
 import AppHeader from '../component/AppHeader';
 
 type ReservationState = {
@@ -21,6 +22,8 @@ export default function Payment() {
   const location = useLocation();
   const reservation = location.state as ReservationState | undefined;
   const [paymentMethod, setPaymentMethod] = useState('Wallet');
+  const [safetyModeEnabled, setSafetyModeEnabled] = useState(false);
+  const [trustedContactsInput, setTrustedContactsInput] = useState("");
 
   const total = useMemo(() => (reservation ? reservation.pricePerHour * 3 : 0), [reservation]);
 
@@ -38,12 +41,24 @@ export default function Payment() {
     );
   }
 
+  const parseTrustedContacts = (): string[] => {
+    return trustedContactsInput
+      .split(/[\n,]+/)
+      .map((c) => c.trim())
+      .filter(Boolean);
+  };
+
   const handleConfirmPayment = () => {
     const currentUser = sessionService.getCurrentUser();
 
     if (!currentUser) {
       alert("You must be logged in to complete a reservation.");
       navigate("/");
+      return;
+    }
+
+    if (safetyModeEnabled && parseTrustedContacts().length === 0) {
+      alert("Please add at least one trusted contact for Safety Mode.");
       return;
     }
 
@@ -55,6 +70,29 @@ export default function Payment() {
       3
     );
 
+    const trustedContacts = parseTrustedContacts();
+
+    const storedRental = JSON.parse(localStorage.getItem("currentRental") || "null");
+
+    const rentalId =
+      storedRental?.id ||
+      storedRental?.rentalId ||
+      reservation.vehicleId ||
+      `${currentUser.id}-${reservation.vehicleId}-${Date.now()}`;
+    
+
+    safetyModeService.setupSafetyMode({
+      rentalId,
+      userId: currentUser.id,
+      userName: `${currentUser.firstName} ${currentUser.lastName}`,
+      vehicleName: reservation.vehicleName,
+      providerName: reservation.providerName,
+      city: reservation.city,
+      region: reservation.region,
+      trustedContacts,
+      enabled: safetyModeEnabled,
+    });
+
     navigate('/my-rentals');
   };
 
@@ -62,19 +100,24 @@ export default function Payment() {
     <div className="min-h-screen w-full bg-[#f3f3f3]">
       <AppHeader />
 
-        <main className="px-4 py-4 sm:px-6 lg:px-8">
-          <div className="mx-auto w-full max-w-6xl">
-            <button
-              onClick={() => navigate(-1)}
-              className="mb-4 flex items-center gap-2 text-sm font-semibold text-[#165713] transition hover:text-[#0f3f0d]"
-            >
-              <svg viewBox="0 0 24 24" className="h-4 w-4" fill="currentColor">
-                <path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z" />
-              </svg>
-              Back
-            </button>
-          </div>
-        <img src={imgLogo} alt="" className="pointer-events-none absolute left-1/2 top-[240px] w-[720px] max-w-[90vw] -translate-x-1/2 opacity-20" />
+      <main className="px-4 py-4 sm:px-6 lg:px-8">
+        <div className="mx-auto w-full max-w-6xl">
+          <button
+            onClick={() => navigate(-1)}
+            className="mb-4 flex items-center gap-2 text-sm font-semibold text-[#165713] transition hover:text-[#0f3f0d]"
+          >
+            <svg viewBox="0 0 24 24" className="h-4 w-4" fill="currentColor">
+              <path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z" />
+            </svg>
+            Back
+          </button>
+        </div>
+
+        <img
+          src={imgLogo}
+          alt=""
+          className="pointer-events-none absolute left-1/2 top-[240px] w-[720px] max-w-[90vw] -translate-x-1/2 opacity-20"
+        />
 
         <div className="relative z-10 mx-auto grid max-w-6xl grid-cols-1 gap-6 lg:grid-cols-[1fr,0.9fr]">
           <section className="rounded-[32px] border-2 border-white/80 bg-[linear-gradient(147deg,rgba(223,223,223,0.69)_2.7%,rgba(234,234,234,0.49)_42.6%,rgba(245,245,245,0.96)_75.2%,rgba(255,255,255,0.41)_98.8%)] p-6 shadow-[0px_4px_35px_rgba(0,0,0,0.12)] backdrop-blur-[6px]">
@@ -103,6 +146,36 @@ export default function Payment() {
                 <li>Pickup can begin from the rental lifecycle page.</li>
               </ul>
             </div>
+
+            <div className="mt-6 rounded-[28px] bg-white/75 p-5 text-sm text-gray-600">
+              <div className="flex items-start justify-between gap-4">
+                <div>
+                  <p className="font-semibold text-[#297525]">Safety Mode</p>
+                  <p className="mt-1 text-sm text-gray-500">
+                    Share your live trip with trusted contacts.
+                  </p>
+                </div>
+
+                <label className="flex items-center gap-2 text-sm font-medium text-[#297525]">
+                  <input
+                    type="checkbox"
+                    checked={safetyModeEnabled}
+                    onChange={(e) => setSafetyModeEnabled(e.target.checked)}
+                    className="h-5 w-5 accent-[#1fae19]"
+                  />
+                  Enable
+                </label>
+              </div>
+
+              {safetyModeEnabled && (
+                <textarea
+                  value={trustedContactsInput}
+                  onChange={(e) => setTrustedContactsInput(e.target.value)}
+                  placeholder="Enter at least one contact (required if enabled)"
+                  className="mt-3 w-full rounded-xl border p-3 text-sm"
+                />
+              )}
+            </div>
           </section>
 
           <aside className="rounded-[32px] border-2 border-white/80 bg-[linear-gradient(147deg,rgba(223,223,223,0.69)_2.7%,rgba(245,245,245,0.96)_75.2%)] p-6 shadow-[0px_4px_35px_rgba(0,0,0,0.12)] backdrop-blur-[6px]">
@@ -124,6 +197,15 @@ export default function Payment() {
               <div className="rounded-2xl bg-white/75 p-4">
                 <p className="font-semibold text-[#297525]">Selected payment</p>
                 <p>{paymentMethod}</p>
+              </div>
+              <div className="rounded-2xl bg-white/75 p-4">
+                <p className="font-semibold text-[#297525]">Safety Mode</p>
+                <p>{safetyModeEnabled ? "Enabled" : "Disabled"}</p>
+                {safetyModeEnabled && (
+                  <p className="text-xs text-gray-400">
+                    {parseTrustedContacts().length} contact(s)
+                  </p>
+                )}
               </div>
             </div>
 

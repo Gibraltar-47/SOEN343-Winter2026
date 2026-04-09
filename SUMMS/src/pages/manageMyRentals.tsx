@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import imgLogo from "../assets/logo.png";
 import { sessionService } from "../services/sessionService";
+import { safetyModeService, type SafetyShareSession } from "../services/safetyModeService";
 import AppHeader from "../component/AppHeader";
 
 type RentalStatus = "reserved" | "active" | "completed" | "cancelled";
@@ -51,6 +52,38 @@ function getStatusClasses(status: RentalStatus) {
   }
 }
 
+function getSafetyBadgeClasses(session: SafetyShareSession | null) {
+  if (!session || !session.isEnabled) {
+    return "bg-gray-100 text-gray-500";
+  }
+
+  if (session.emergency || session.stage === "Emergency raised") {
+    return "bg-[#ffe0e6] text-[#b4233c]";
+  }
+
+  if (session.isLive) {
+    return "bg-[#dff5df] text-[#297525]";
+  }
+
+  return "bg-[#fff7d6] text-[#8a6d1f]";
+}
+
+function getSafetyBadgeText(session: SafetyShareSession | null) {
+  if (!session || !session.isEnabled) {
+    return "Safety Off";
+  }
+
+  if (session.emergency || session.stage === "Emergency raised") {
+    return "Emergency";
+  }
+
+  if (session.isLive) {
+    return "Live Sharing";
+  }
+
+  return "Safety On";
+}
+
 function formatDate(value?: string) {
   if (!value) return "—";
 
@@ -93,18 +126,19 @@ export default function ManageMyRentals() {
     const allRentals = getStoredRentals();
 
     if (!currentUser) {
-        setRentals([]);
-        return;
+      setRentals([]);
+      return;
     }
 
     const currentUserId = String(currentUser.id).trim();
 
     const userRentals = allRentals.filter((rental) => {
-        return String(rental.userId).trim() === currentUserId;
+      return String(rental.userId).trim() === currentUserId;
     });
 
     setRentals(userRentals);
-    }
+  }
+
   useEffect(() => {
     refreshRentals();
   }, [userId]);
@@ -131,6 +165,7 @@ export default function ManageMyRentals() {
     });
 
     saveStoredRentals(updatedRentals);
+    safetyModeService.startLiveSharing(rentalId);
     refreshRentals();
     setMessage("Rental started successfully.");
   }
@@ -158,6 +193,7 @@ export default function ManageMyRentals() {
     });
 
     saveStoredRentals(updatedRentals);
+    safetyModeService.stopLiveSharing(rentalId);
     refreshRentals();
     setMessage("Rental completed successfully.");
   }
@@ -179,8 +215,69 @@ export default function ManageMyRentals() {
     });
 
     saveStoredRentals(updatedRentals);
+    safetyModeService.stopLiveSharing(rentalId);
     refreshRentals();
     setMessage("Rental cancelled successfully.");
+  }
+
+  function handleStartLiveSharing(rentalId: string) {
+    const updated = safetyModeService.startLiveSharing(rentalId);
+
+    if (!updated) {
+      setMessage("Safety Mode is not enabled for this rental.");
+      return;
+    }
+
+    refreshRentals();
+    setMessage("Live sharing started.");
+  }
+
+  function handleStopLiveSharing(rentalId: string) {
+    const updated = safetyModeService.stopLiveSharing(rentalId);
+
+    if (!updated) {
+      setMessage("No live safety session found for this rental.");
+      return;
+    }
+
+    refreshRentals();
+    setMessage("Live sharing stopped.");
+  }
+
+  function handleEmergency(rentalId: string) {
+    const updated = safetyModeService.triggerEmergency(rentalId);
+
+    if (!updated) {
+      setMessage("Safety Mode must be enabled for this rental first.");
+      return;
+    }
+
+    refreshRentals();
+    setMessage("Emergency alert triggered.");
+  }
+
+  function handleCopyShareLink(rentalId: string) {
+    const session = safetyModeService.getSessionByRentalId(rentalId);
+
+    if (!session) {
+      setMessage("No Safety Mode session found for this rental.");
+      return;
+    }
+
+    const link = safetyModeService.buildShareLink(session.token);
+    navigator.clipboard.writeText(link);
+    setMessage("Share link copied to clipboard.");
+  }
+
+  function handleViewSharedTrip(rentalId: string) {
+    const session = safetyModeService.getSessionByRentalId(rentalId);
+
+    if (!session) {
+      setMessage("No Safety Mode session found for this rental.");
+      return;
+    }
+
+    navigate(`/trip-share/${session.token}`);
   }
 
   return (
@@ -219,7 +316,7 @@ export default function ManageMyRentals() {
                 </h1>
 
                 <p className="text-center text-sm text-gray-500">
-                  Start, complete, or cancel your reservations.
+                  Start, complete, cancel, and safely share your reservations.
                 </p>
               </div>
 
@@ -236,106 +333,173 @@ export default function ManageMyRentals() {
                   </div>
                 ) : (
                   <div className="grid w-full grid-cols-1 gap-4">
-                    {sortedRentals.map((rental) => (
-                      <div
-                        key={rental.id}
-                        className="rounded-[28px] border-2 border-white/80 bg-white/70 px-6 py-5 shadow-[0px_4px_16px_rgba(0,0,0,0.08)]"
-                      >
-                        <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-                          <div className="space-y-2">
-                            <div className="flex flex-wrap items-center gap-3">
-                              <p className="text-lg font-semibold text-[#297525]">
-                                {rental.vehicleName}
-                              </p>
-                              <span
-                                className={`rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-wide ${getStatusClasses(
-                                  rental.status,
-                                )}`}
-                              >
-                                {rental.status}
-                              </span>
-                            </div>
+                    {sortedRentals.map((rental) => {
+                      const safetySession = safetyModeService.getSessionByRentalId(rental.id);
 
-                            <p className="text-sm text-gray-500">
-                              Provider:{" "}
-                              <span className="font-semibold text-[#297525]">
-                                {rental.providerName}
-                              </span>
-                            </p>
-
-                            <p className="text-sm text-gray-500">
-                              {rental.type} · {rental.city}, {rental.region}
-                            </p>
-
-                            <p className="text-sm text-gray-500">
-                              Reserved on {formatDate(rental.reservedAt)}
-                            </p>
-
-                            <p className="text-sm text-gray-500">
-                              Started at: {formatDate(rental.startedAt)}
-                            </p>
-
-                            <p className="text-sm text-gray-500">
-                              Ended at: {formatDate(rental.endedAt)}
-                            </p>
-
-                            <p className="text-sm text-gray-500">
-                              Payment: {rental.paymentMethod}
-                            </p>
-
-                            <p className="text-sm font-semibold text-[#297525]">
-                              {rental.status === "completed"
-                                ? `Final total: $${rental.total.toFixed(2)}`
-                                : `Current total: $${Number(rental.total).toFixed(2)}`}
-                            </p>
-                          </div>
-
-                          <div className="flex flex-col gap-2 lg:items-end">
-                            <div className="rounded-full bg-[#f3f3f3] px-4 py-2 text-sm text-gray-500">
-                              ${rental.pricePerHour}/h
-                            </div>
-
-                            {rental.status === "reserved" ? (
-                              <>
-                                <button
-                                  onClick={() => handleStartRental(rental.id)}
-                                  className="rounded-full bg-[#41a7ff] px-5 py-2 text-sm font-semibold text-white transition hover:bg-blue-600"
+                      return (
+                        <div
+                          key={rental.id}
+                          className="rounded-[28px] border-2 border-white/80 bg-white/70 px-6 py-5 shadow-[0px_4px_16px_rgba(0,0,0,0.08)]"
+                        >
+                          <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+                            <div className="space-y-2">
+                              <div className="flex flex-wrap items-center gap-3">
+                                <p className="text-lg font-semibold text-[#297525]">
+                                  {rental.vehicleName}
+                                </p>
+                                <span
+                                  className={`rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-wide ${getStatusClasses(
+                                    rental.status,
+                                  )}`}
                                 >
-                                  Start Rental
-                                </button>
-
-                                <button
-                                  onClick={() => handleCancelRental(rental.id)}
-                                  className="rounded-full bg-[#d4183d] px-5 py-2 text-sm font-semibold text-white transition hover:opacity-90"
+                                  {rental.status}
+                                </span>
+                                <span
+                                  className={`rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-wide ${getSafetyBadgeClasses(
+                                    safetySession,
+                                  )}`}
                                 >
-                                  Cancel Rental
-                                </button>
-                              </>
-                            ) : rental.status === "active" ? (
-                              <>
-                                <button
-                                  onClick={() => handleCompleteRental(rental.id)}
-                                  className="rounded-full bg-[#165713] px-5 py-2 text-sm font-semibold text-white transition hover:bg-[#11440f]"
-                                >
-                                  Complete Rental
-                                </button>
-
-                                <button
-                                  onClick={() => handleCancelRental(rental.id)}
-                                  className="rounded-full bg-[#d4183d] px-5 py-2 text-sm font-semibold text-white transition hover:opacity-90"
-                                >
-                                  Cancel Rental
-                                </button>
-                              </>
-                            ) : (
-                              <div className="rounded-full bg-white/80 px-4 py-2 text-xs font-semibold text-gray-400">
-                                No action available
+                                  {getSafetyBadgeText(safetySession)}
+                                </span>
                               </div>
-                            )}
+
+                              <p className="text-sm text-gray-500">
+                                Provider:{" "}
+                                <span className="font-semibold text-[#297525]">
+                                  {rental.providerName}
+                                </span>
+                              </p>
+
+                              <p className="text-sm text-gray-500">
+                                {rental.type} · {rental.city}, {rental.region}
+                              </p>
+
+                              <p className="text-sm text-gray-500">
+                                Reserved on {formatDate(rental.reservedAt)}
+                              </p>
+
+                              <p className="text-sm text-gray-500">
+                                Started at: {formatDate(rental.startedAt)}
+                              </p>
+
+                              <p className="text-sm text-gray-500">
+                                Ended at: {formatDate(rental.endedAt)}
+                              </p>
+
+                              <p className="text-sm text-gray-500">
+                                Payment: {rental.paymentMethod}
+                              </p>
+
+                              <p className="text-sm font-semibold text-[#297525]">
+                                {rental.status === "completed"
+                                  ? `Final total: $${rental.total.toFixed(2)}`
+                                  : `Current total: $${Number(rental.total).toFixed(2)}`}
+                              </p>
+
+                              {safetySession && (
+                                <div className="mt-3 rounded-2xl bg-[#f7faf7] p-4 text-sm text-gray-600">
+                                  <p className="font-semibold text-[#297525]">
+                                    Safety Mode Details
+                                  </p>
+                                  <p className="mt-1">Stage: {safetySession.stage}</p>
+                                  <p>Trusted contacts: {safetySession.trustedContacts.length}</p>
+                                  <p>Last updated: {formatDate(safetySession.lastUpdatedAt)}</p>
+                                </div>
+                              )}
+                            </div>
+
+                            <div className="flex flex-col gap-2 lg:items-end">
+                              <div className="rounded-full bg-[#f3f3f3] px-4 py-2 text-sm text-gray-500">
+                                ${rental.pricePerHour}/h
+                              </div>
+
+                              {rental.status === "reserved" ? (
+                                <>
+                                  <button
+                                    onClick={() => handleStartRental(rental.id)}
+                                    className="rounded-full bg-[#41a7ff] px-5 py-2 text-sm font-semibold text-white transition hover:bg-blue-600"
+                                  >
+                                    Start Rental
+                                  </button>
+
+                                  <button
+                                    onClick={() => handleCancelRental(rental.id)}
+                                    className="rounded-full bg-[#d4183d] px-5 py-2 text-sm font-semibold text-white transition hover:opacity-90"
+                                  >
+                                    Cancel Rental
+                                  </button>
+                                </>
+                              ) : rental.status === "active" ? (
+                                <>
+                                  <button
+                                    onClick={() => handleCompleteRental(rental.id)}
+                                    className="rounded-full bg-[#165713] px-5 py-2 text-sm font-semibold text-white transition hover:bg-[#11440f]"
+                                  >
+                                    Complete Rental
+                                  </button>
+
+                                  <button
+                                    onClick={() => handleCancelRental(rental.id)}
+                                    className="rounded-full bg-[#d4183d] px-5 py-2 text-sm font-semibold text-white transition hover:opacity-90"
+                                  >
+                                    Cancel Rental
+                                  </button>
+                                </>
+                              ) : (
+                                <div className="rounded-full bg-white/80 px-4 py-2 text-xs font-semibold text-gray-400">
+                                  No action available
+                                </div>
+                              )}
+
+                              {safetySession && !safetySession.isLive && rental.status !== "completed" && rental.status !== "cancelled" && (
+                                <button
+                                  onClick={() => handleStartLiveSharing(rental.id)}
+                                  className="rounded-full bg-[#297525] px-5 py-2 text-sm font-semibold text-white transition hover:opacity-90"
+                                >
+                                  Start Live Sharing
+                                </button>
+                              )}
+
+                              {safetySession?.isLive && (
+                                <>
+                                  <button
+                                    onClick={() => handleStopLiveSharing(rental.id)}
+                                    className="rounded-full bg-[#8a6d1f] px-5 py-2 text-sm font-semibold text-white transition hover:opacity-90"
+                                  >
+                                    Stop Live Sharing
+                                  </button>
+
+                                  <button
+                                    onClick={() => handleEmergency(rental.id)}
+                                    className="rounded-full bg-[#d4183d] px-5 py-2 text-sm font-semibold text-white transition hover:opacity-90"
+                                  >
+                                    Trigger Emergency
+                                  </button>
+                                </>
+                              )}
+
+                              {safetySession && (
+                                <>
+                                  <button
+                                    onClick={() => handleCopyShareLink(rental.id)}
+                                    className="rounded-full bg-[#176b87] px-5 py-2 text-sm font-semibold text-white transition hover:opacity-90"
+                                  >
+                                    Copy Share Link
+                                  </button>
+
+                                  <button
+                                    onClick={() => handleViewSharedTrip(rental.id)}
+                                    className="rounded-full bg-[#165713] px-5 py-2 text-sm font-semibold text-white transition hover:opacity-90"
+                                  >
+                                    View Shared Trip
+                                  </button>
+                                </>
+                              )}
+                            </div>
                           </div>
                         </div>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 )}
               </div>
