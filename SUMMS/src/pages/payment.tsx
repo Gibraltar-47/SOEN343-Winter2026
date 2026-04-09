@@ -25,15 +25,25 @@ export default function Payment() {
   const [safetyModeEnabled, setSafetyModeEnabled] = useState(false);
   const [trustedContactsInput, setTrustedContactsInput] = useState("");
 
-  const total = useMemo(() => (reservation ? reservation.pricePerHour * 3 : 0), [reservation]);
+  const total = useMemo(
+    () => (reservation ? reservation.pricePerHour * 3 : 0),
+    [reservation]
+  );
 
   if (!reservation) {
     return (
       <div className="min-h-screen bg-[#f3f3f3] p-8">
         <div className="mx-auto max-w-2xl rounded-[30px] border-2 border-white/80 bg-white/80 p-8 text-center shadow-[0px_4px_30px_rgba(0,0,0,0.10)]">
-          <h1 className="text-2xl font-semibold text-[#297525]">No reservation selected</h1>
-          <p className="mt-3 text-sm text-gray-500">Choose a vehicle first before proceeding to payment.</p>
-          <button onClick={() => navigate('/vehicles')} className="mt-6 h-11 rounded-full bg-[#1fae19] px-6 text-sm font-semibold text-white">
+          <h1 className="text-2xl font-semibold text-[#297525]">
+            No reservation selected
+          </h1>
+          <p className="mt-3 text-sm text-gray-500">
+            Choose a vehicle first before proceeding to payment.
+          </p>
+          <button
+            onClick={() => navigate('/vehicles')}
+            className="mt-6 h-11 rounded-full bg-[#1fae19] px-6 text-sm font-semibold text-white"
+          >
             Go to Vehicle Search
           </button>
         </div>
@@ -72,14 +82,22 @@ export default function Payment() {
 
     const trustedContacts = parseTrustedContacts();
 
-    const storedRental = JSON.parse(localStorage.getItem("currentRental") || "null");
+    const storedRentals = JSON.parse(localStorage.getItem("rentals") || "[]");
 
-    const rentalId =
-      storedRental?.id ||
-      storedRental?.rentalId ||
-      reservation.vehicleId ||
-      `${currentUser.id}-${reservation.vehicleId}-${Date.now()}`;
-    
+    const latestRental = [...storedRentals]
+      .filter((rental) => rental.userId === currentUser.id)
+      .sort(
+        (a, b) =>
+          new Date(b.reservedAt).getTime() - new Date(a.reservedAt).getTime()
+      )[0];
+
+    const rentalId = latestRental?.id;
+
+    if (!rentalId) {
+      alert("Could not find the created rental for Safety Mode.");
+      navigate("/my-rentals");
+      return;
+    }
 
     safetyModeService.setupSafetyMode({
       rentalId,
@@ -121,19 +139,31 @@ export default function Payment() {
 
         <div className="relative z-10 mx-auto grid max-w-6xl grid-cols-1 gap-6 lg:grid-cols-[1fr,0.9fr]">
           <section className="rounded-[32px] border-2 border-white/80 bg-[linear-gradient(147deg,rgba(223,223,223,0.69)_2.7%,rgba(234,234,234,0.49)_42.6%,rgba(245,245,245,0.96)_75.2%,rgba(255,255,255,0.41)_98.8%)] p-6 shadow-[0px_4px_35px_rgba(0,0,0,0.12)] backdrop-blur-[6px]">
-            <p className="inline-flex rounded-full bg-[#165713] px-4 py-1 text-xs font-semibold tracking-wide text-white">Step 3 · Pay Reservation</p>
-            <h1 className="mt-4 text-3xl font-semibold text-[#297525]">Confirm your reservation</h1>
-            <p className="mt-2 text-sm text-gray-500">The system now requests payment authorization before the rental can be activated.</p>
+            <p className="inline-flex rounded-full bg-[#165713] px-4 py-1 text-xs font-semibold tracking-wide text-white">
+              Step 3 · Pay Reservation
+            </p>
+            <h1 className="mt-4 text-3xl font-semibold text-[#297525]">
+              Confirm your reservation
+            </h1>
+            <p className="mt-2 text-sm text-gray-500">
+              The system now requests payment authorization before the rental can be activated.
+            </p>
 
             <div className="mt-6 grid gap-4 md:grid-cols-2">
               {['Wallet', 'Credit Card', 'Debit Card'].map((method) => (
                 <button
                   key={method}
                   onClick={() => setPaymentMethod(method)}
-                  className={`rounded-[24px] border-2 p-5 text-left transition ${paymentMethod === method ? 'border-[#76c573] bg-[#76c573]/15 shadow-[0px_4px_20px_rgba(0,0,0,0.10)]' : 'border-white/80 bg-white/70'}`}
+                  className={`rounded-[24px] border-2 p-5 text-left transition ${
+                    paymentMethod === method
+                      ? 'border-[#76c573] bg-[#76c573]/15 shadow-[0px_4px_20px_rgba(0,0,0,0.10)]'
+                      : 'border-white/80 bg-white/70'
+                  }`}
                 >
                   <p className="font-semibold text-[#297525]">{method}</p>
-                  <p className="mt-1 text-sm text-gray-500">Mock payment method for the prototype flow.</p>
+                  <p className="mt-1 text-sm text-gray-500">
+                    Mock payment method for the prototype flow.
+                  </p>
                 </button>
               ))}
             </div>
@@ -209,7 +239,10 @@ export default function Payment() {
               </div>
             </div>
 
-            <button onClick={handleConfirmPayment} className="mt-6 h-12 w-full rounded-full bg-[#1fae19] px-6 text-sm font-semibold text-white transition hover:bg-green-700">
+            <button
+              onClick={handleConfirmPayment}
+              className="mt-6 h-12 w-full rounded-full bg-[#1fae19] px-6 text-sm font-semibold text-white transition hover:bg-green-700"
+            >
               Confirm and Reserve
             </button>
           </aside>
