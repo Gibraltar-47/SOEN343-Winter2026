@@ -4,6 +4,7 @@ import imgAdminLogo from "../assets/adminLogo.png";
 import { useNavigate } from "react-router-dom";
 import Client from "../types/user";
 import { loginClient } from "../services/userService";
+import { sessionService } from "../services/sessionService";
 
 type LoginProps = {
   onLogin?: () => void;
@@ -51,19 +52,12 @@ export default function Login({ onLogin, onSignUp }: LoginProps) {
     }
 
     alert("Login successful!");
-    localStorage.setItem("currentUser", JSON.stringify(matchedClient));
+    sessionService.login(matchedClient);
 
     if (onLogin) {
       onLogin();
     }
-
-    if (matchedClient.role === "admin") {
-      navigate("/admin-dashboard");
-    } else if (matchedClient.role === "provider") {
-      navigate("/provider");
-    } else {
-      navigate("/home");
-    }
+    navigate(sessionService.getDashboardRoute());
   };
 
   const handleSignUp = () => {

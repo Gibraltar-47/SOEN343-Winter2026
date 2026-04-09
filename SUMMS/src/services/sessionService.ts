@@ -7,6 +7,10 @@ function getCurrentUser(): Client | null {
   return saved ? JSON.parse(saved) : null;
 }
 
+function login(user: Client) {
+  localStorage.setItem(CURRENT_USER_KEY, JSON.stringify(user));
+}
+
 function logout() {
   localStorage.removeItem(CURRENT_USER_KEY);
 }
@@ -22,6 +26,7 @@ function getDashboardRoute(): string {
 
 export const sessionService = {
   getCurrentUser,
+  login,
   logout,
   getDashboardRoute,
 };
