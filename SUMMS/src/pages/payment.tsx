@@ -3,7 +3,10 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import imgLogo from '../assets/logo.png';
 import { paymentService } from "../services/paymentService";
 import { sessionService } from "../services/sessionService";
-import { safetyModeService } from "../services/safetyModeService";
+import {
+  safetyModeService,
+  type TrustedContact,
+} from "../services/safetyModeService";
 import AppHeader from '../component/AppHeader';
 
 type ReservationState = {
@@ -17,13 +20,30 @@ type ReservationState = {
   type: string;
 };
 
+type ContactForm = {
+  fullName: string;
+  email: string;
+  phoneNumber: string;
+};
+
+const emptyContact = (): ContactForm => ({
+  fullName: "",
+  email: "",
+  phoneNumber: "",
+});
+
 export default function Payment() {
   const navigate = useNavigate();
   const location = useLocation();
   const reservation = location.state as ReservationState | undefined;
   const [paymentMethod, setPaymentMethod] = useState('Wallet');
   const [safetyModeEnabled, setSafetyModeEnabled] = useState(false);
-  const [trustedContactsInput, setTrustedContactsInput] = useState("");
+  const [expectedReturnAt, setExpectedReturnAt] = useState("");
+  const [contacts, setContacts] = useState<ContactForm[]>([
+    emptyContact(),
+    emptyContact(),
+    emptyContact(),
+  ]);
 
   const total = useMemo(
     () => (reservation ? reservation.pricePerHour * 3 : 0),
@@ -51,11 +71,39 @@ export default function Payment() {
     );
   }
 
-  const parseTrustedContacts = (): string[] => {
-    return trustedContactsInput
-      .split(/[\n,]+/)
-      .map((c) => c.trim())
-      .filter(Boolean);
+  const updateContact = (
+    index: number,
+    field: keyof ContactForm,
+    value: string,
+  ) => {
+    setContacts((prev) =>
+      prev.map((contact, i) =>
+        i === index ? { ...contact, [field]: value } : contact
+      )
+    );
+  };
+
+  const parseTrustedContacts = (): TrustedContact[] => {
+    return contacts
+      .map((contact, index) => ({
+        id: `contact-${index + 1}`,
+        fullName: contact.fullName.trim(),
+        email: contact.email.trim(),
+        phoneNumber: contact.phoneNumber.trim(),
+      }))
+      .filter(
+        (contact) =>
+          contact.fullName || contact.email || contact.phoneNumber
+      );
+  };
+
+  const validTrustedContacts = (): TrustedContact[] => {
+    return parseTrustedContacts().filter(
+      (contact) =>
+        contact.fullName &&
+        contact.email &&
+        contact.phoneNumber
+    );
   };
 
   const handleConfirmPayment = () => {
@@ -67,9 +115,24 @@ export default function Payment() {
       return;
     }
 
-    if (safetyModeEnabled && parseTrustedContacts().length === 0) {
-      alert("Please add at least one trusted contact for Safety Mode.");
-      return;
+    if (safetyModeEnabled) {
+      const parsed = parseTrustedContacts();
+      const valid = validTrustedContacts();
+
+      if (parsed.length === 0) {
+        alert("Please add at least one trusted contact for Safety Mode.");
+        return;
+      }
+
+      if (valid.length !== parsed.length) {
+        alert("Each trusted contact must include a name, email address, and phone number.");
+        return;
+      }
+
+      if (valid.length > 3) {
+        alert("You can add up to 3 trusted contacts.");
+        return;
+      }
     }
 
     paymentService.processReservationPayment(
@@ -80,7 +143,7 @@ export default function Payment() {
       3
     );
 
-    const trustedContacts = parseTrustedContacts();
+    const trustedContacts = validTrustedContacts();
 
     const storedRentals = JSON.parse(localStorage.getItem("rentals") || "[]");
 
@@ -109,6 +172,7 @@ export default function Payment() {
       region: reservation.region,
       trustedContacts,
       enabled: safetyModeEnabled,
+      expectedReturnAt: expectedReturnAt || undefined,
     });
 
     navigate('/my-rentals');
@@ -172,8 +236,8 @@ export default function Payment() {
               <p className="font-semibold text-[#297525]">Authorization notes</p>
               <ul className="mt-3 list-disc space-y-1 pl-5">
                 <li>Reservation is held once payment is approved.</li>
-                <li>User receives a confirmation receipt.</li>
-                <li>Pickup can begin from the rental lifecycle page.</li>
+                <li>Live sharing only starts after the rental begins.</li>
+                <li>Trusted contacts will receive simulated safety notifications.</li>
               </ul>
             </div>
 
@@ -182,7 +246,7 @@ export default function Payment() {
                 <div>
                   <p className="font-semibold text-[#297525]">Safety Mode</p>
                   <p className="mt-1 text-sm text-gray-500">
-                    Share your live trip with trusted contacts.
+                    Add up to 3 trusted contacts. Sharing becomes live only after the rental starts.
                   </p>
                 </div>
 
@@ -198,12 +262,62 @@ export default function Payment() {
               </div>
 
               {safetyModeEnabled && (
-                <textarea
-                  value={trustedContactsInput}
-                  onChange={(e) => setTrustedContactsInput(e.target.value)}
-                  placeholder="Enter at least one contact (required if enabled)"
-                  className="mt-3 w-full rounded-xl border p-3 text-sm"
-                />
+                <div className="mt-4 space-y-4">
+                  <div>
+                    <label className="mb-2 block text-sm font-semibold text-[#297525]">
+                      Expected return time
+                    </label>
+                    <input
+                      type="datetime-local"
+                      value={expectedReturnAt}
+                      onChange={(e) => setExpectedReturnAt(e.target.value)}
+                      className="w-full rounded-xl border p-3 text-sm"
+                    />
+                  </div>
+
+                  {contacts.map((contact, index) => (
+                    <div
+                      key={index}
+                      className="rounded-2xl border border-gray-200 bg-white/80 p-4"
+                    >
+                      <p className="mb-3 font-semibold text-[#297525]">
+                        Trusted Contact {index + 1}
+                      </p>
+
+                      <div className="grid gap-3 md:grid-cols-3">
+                        <input
+                          type="text"
+                          value={contact.fullName}
+                          onChange={(e) =>
+                            updateContact(index, "fullName", e.target.value)
+                          }
+                          placeholder="Full name"
+                          className="rounded-xl border p-3 text-sm"
+                        />
+
+                        <input
+                          type="email"
+                          value={contact.email}
+                          onChange={(e) =>
+                            updateContact(index, "email", e.target.value)
+                          }
+                          placeholder="Email address"
+                          className="rounded-xl border p-3 text-sm"
+                        />
+
+                        <input
+                          type="tel"
+                          value={contact.phoneNumber}
+                          onChange={(e) =>
+                            updateContact(index, "phoneNumber", e.target.value)
+                          }
+                          placeholder="Phone number"
+                          className="rounded-xl border p-3 text-sm"
+                        />
+                      </div>
+                    </div>
+                  ))}
+                </div>
               )}
             </div>
           </section>
@@ -233,7 +347,7 @@ export default function Payment() {
                 <p>{safetyModeEnabled ? "Enabled" : "Disabled"}</p>
                 {safetyModeEnabled && (
                   <p className="text-xs text-gray-400">
-                    {parseTrustedContacts().length} contact(s)
+                    {validTrustedContacts().length} complete contact(s)
                   </p>
                 )}
               </div>

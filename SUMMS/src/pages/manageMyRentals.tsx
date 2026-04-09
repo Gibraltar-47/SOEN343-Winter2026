@@ -53,46 +53,23 @@ function getStatusClasses(status: RentalStatus) {
 }
 
 function getSafetyBadgeClasses(session: SafetyShareSession | null) {
-  if (!session || !session.isEnabled) {
-    return "bg-gray-100 text-gray-500";
-  }
-
-  if (session.emergency || session.stage === "Emergency raised") {
-    return "bg-[#ffe0e6] text-[#b4233c]";
-  }
-
-  if (session.isLive) {
-    return "bg-[#dff5df] text-[#297525]";
-  }
-
+  if (!session || !session.isEnabled) return "bg-gray-100 text-gray-500";
+  if (session.emergency) return "bg-[#ffe0e6] text-[#b4233c]";
+  if (session.isLive) return "bg-[#dff5df] text-[#297525]";
   return "bg-[#fff7d6] text-[#8a6d1f]";
 }
 
 function getSafetyBadgeText(session: SafetyShareSession | null) {
-  if (!session || !session.isEnabled) {
-    return "Safety Off";
-  }
-
-  if (session.emergency || session.stage === "Emergency raised") {
-    return "Emergency";
-  }
-
-  if (session.isLive) {
-    return "Live Sharing";
-  }
-
-  return "Safety On";
+  if (!session || !session.isEnabled) return "Safety Off";
+  if (session.emergency) return "Emergency";
+  if (session.isLive) return "Live Sharing";
+  return "Ready to Share";
 }
 
 function formatDate(value?: string) {
   if (!value) return "—";
-
   const date = new Date(value);
-
-  if (Number.isNaN(date.getTime())) {
-    return "—";
-  }
-
+  if (Number.isNaN(date.getTime())) return "—";
   return date.toLocaleString();
 }
 
@@ -131,10 +108,9 @@ export default function ManageMyRentals() {
     }
 
     const currentUserId = String(currentUser.id).trim();
-
-    const userRentals = allRentals.filter((rental) => {
-      return String(rental.userId).trim() === currentUserId;
-    });
+    const userRentals = allRentals.filter(
+      (rental) => String(rental.userId).trim() === currentUserId
+    );
 
     setRentals(userRentals);
   }
@@ -145,8 +121,7 @@ export default function ManageMyRentals() {
 
   const sortedRentals = useMemo(() => {
     return [...rentals].sort(
-      (a, b) =>
-        new Date(b.reservedAt).getTime() - new Date(a.reservedAt).getTime(),
+      (a, b) => new Date(b.reservedAt).getTime() - new Date(a.reservedAt).getTime()
     );
   }, [rentals]);
 
@@ -154,8 +129,7 @@ export default function ManageMyRentals() {
     const allRentals = getStoredRentals();
 
     const updatedRentals = allRentals.map((rental) => {
-      if (rental.id !== rentalId) return rental;
-      if (rental.status !== "reserved") return rental;
+      if (rental.id !== rentalId || rental.status !== "reserved") return rental;
 
       return {
         ...rental,
@@ -167,15 +141,14 @@ export default function ManageMyRentals() {
     saveStoredRentals(updatedRentals);
     safetyModeService.startLiveSharing(rentalId);
     refreshRentals();
-    setMessage("Rental started successfully.");
+    setMessage("Rental started. Live sharing notifications were sent to trusted contacts.");
   }
 
   function handleCompleteRental(rentalId: string) {
     const allRentals = getStoredRentals();
 
     const updatedRentals = allRentals.map((rental) => {
-      if (rental.id !== rentalId) return rental;
-      if (rental.status !== "active") return rental;
+      if (rental.id !== rentalId || rental.status !== "active") return rental;
 
       const endedAt = new Date().toISOString();
       const total = calculateCompletedTotal(
@@ -195,7 +168,7 @@ export default function ManageMyRentals() {
     saveStoredRentals(updatedRentals);
     safetyModeService.stopLiveSharing(rentalId);
     refreshRentals();
-    setMessage("Rental completed successfully.");
+    setMessage("Rental completed and Safety Mode sharing stopped.");
   }
 
   function handleCancelRental(rentalId: string) {
@@ -203,9 +176,7 @@ export default function ManageMyRentals() {
 
     const updatedRentals = allRentals.map((rental) => {
       if (rental.id !== rentalId) return rental;
-      if (rental.status === "completed" || rental.status === "cancelled") {
-        return rental;
-      }
+      if (rental.status === "completed" || rental.status === "cancelled") return rental;
 
       return {
         ...rental,
@@ -217,10 +188,15 @@ export default function ManageMyRentals() {
     saveStoredRentals(updatedRentals);
     safetyModeService.stopLiveSharing(rentalId);
     refreshRentals();
-    setMessage("Rental cancelled successfully.");
+    setMessage("Rental cancelled and Safety Mode sharing stopped.");
   }
 
-  function handleStartLiveSharing(rentalId: string) {
+  function handleStartLiveSharing(rentalId: string, rentalStatus: RentalStatus) {
+    if (rentalStatus !== "active") {
+      setMessage("Live sharing can only start after the rental has started.");
+      return;
+    }
+
     const updated = safetyModeService.startLiveSharing(rentalId);
 
     if (!updated) {
@@ -229,7 +205,7 @@ export default function ManageMyRentals() {
     }
 
     refreshRentals();
-    setMessage("Live sharing started.");
+    setMessage("Live sharing started and trusted contacts were notified.");
   }
 
   function handleStopLiveSharing(rentalId: string) {
@@ -248,12 +224,12 @@ export default function ManageMyRentals() {
     const updated = safetyModeService.triggerEmergency(rentalId);
 
     if (!updated) {
-      setMessage("Safety Mode must be enabled for this rental first.");
+      setMessage("Emergency can only be triggered during an active live sharing session.");
       return;
     }
 
     refreshRentals();
-    setMessage("Emergency alert triggered.");
+    setMessage("Emergency alert triggered. Trusted contacts were notified.");
   }
 
   function handleCopyShareLink(rentalId: string) {
@@ -264,8 +240,7 @@ export default function ManageMyRentals() {
       return;
     }
 
-    const link = safetyModeService.buildShareLink(session.token);
-    navigator.clipboard.writeText(link);
+    navigator.clipboard.writeText(safetyModeService.buildShareLink(session.token));
     setMessage("Share link copied to clipboard.");
   }
 
@@ -278,6 +253,33 @@ export default function ManageMyRentals() {
     }
 
     navigate(`/trip-share/${session.token}`);
+  }
+
+  function handleCheckIn(rentalId: string) {
+    const updated = safetyModeService.sendCheckInUpdate(rentalId);
+
+    if (!updated) {
+      setMessage("Check-in is only available during live sharing.");
+      return;
+    }
+
+    refreshRentals();
+    setMessage("Check-in update sent to trusted contacts.");
+  }
+
+  function handleStageUpdate(
+    rentalId: string,
+    stage: "En route" | "Near destination" | "Arrived safely",
+  ) {
+    const updated = safetyModeService.updateStage(rentalId, stage);
+
+    if (!updated) {
+      setMessage("Trip stages can only be updated during live sharing.");
+      return;
+    }
+
+    refreshRentals();
+    setMessage(`Trip stage updated to "${stage}".`);
   }
 
   return (
@@ -347,27 +349,16 @@ export default function ManageMyRentals() {
                                 <p className="text-lg font-semibold text-[#297525]">
                                   {rental.vehicleName}
                                 </p>
-                                <span
-                                  className={`rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-wide ${getStatusClasses(
-                                    rental.status,
-                                  )}`}
-                                >
+                                <span className={`rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-wide ${getStatusClasses(rental.status)}`}>
                                   {rental.status}
                                 </span>
-                                <span
-                                  className={`rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-wide ${getSafetyBadgeClasses(
-                                    safetySession,
-                                  )}`}
-                                >
+                                <span className={`rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-wide ${getSafetyBadgeClasses(safetySession)}`}>
                                   {getSafetyBadgeText(safetySession)}
                                 </span>
                               </div>
 
                               <p className="text-sm text-gray-500">
-                                Provider:{" "}
-                                <span className="font-semibold text-[#297525]">
-                                  {rental.providerName}
-                                </span>
+                                Provider: <span className="font-semibold text-[#297525]">{rental.providerName}</span>
                               </p>
 
                               <p className="text-sm text-gray-500">
@@ -398,12 +389,12 @@ export default function ManageMyRentals() {
 
                               {safetySession && (
                                 <div className="mt-3 rounded-2xl bg-[#f7faf7] p-4 text-sm text-gray-600">
-                                  <p className="font-semibold text-[#297525]">
-                                    Safety Mode Details
-                                  </p>
+                                  <p className="font-semibold text-[#297525]">Safety Mode Details</p>
                                   <p className="mt-1">Stage: {safetySession.stage}</p>
                                   <p>Trusted contacts: {safetySession.trustedContacts.length}</p>
-                                  <p>Last updated: {formatDate(safetySession.lastUpdatedAt)}</p>
+                                  <p>Expected return: {formatDate(safetySession.expectedReturnAt)}</p>
+                                  <p>Last check-in: {formatDate(safetySession.lastCheckInAt)}</p>
+                                  <p>Notifications sent: {safetySession.notifications.length}</p>
                                 </div>
                               )}
                             </div>
@@ -451,9 +442,9 @@ export default function ManageMyRentals() {
                                 </div>
                               )}
 
-                              {safetySession && !safetySession.isLive && rental.status !== "completed" && rental.status !== "cancelled" && (
+                              {safetySession && !safetySession.isLive && rental.status === "active" && (
                                 <button
-                                  onClick={() => handleStartLiveSharing(rental.id)}
+                                  onClick={() => handleStartLiveSharing(rental.id, rental.status)}
                                   className="rounded-full bg-[#297525] px-5 py-2 text-sm font-semibold text-white transition hover:opacity-90"
                                 >
                                   Start Live Sharing
@@ -467,6 +458,34 @@ export default function ManageMyRentals() {
                                     className="rounded-full bg-[#8a6d1f] px-5 py-2 text-sm font-semibold text-white transition hover:opacity-90"
                                   >
                                     Stop Live Sharing
+                                  </button>
+
+                                  <button
+                                    onClick={() => handleCheckIn(rental.id)}
+                                    className="rounded-full bg-[#176b87] px-5 py-2 text-sm font-semibold text-white transition hover:opacity-90"
+                                  >
+                                    Send Check-In
+                                  </button>
+
+                                  <button
+                                    onClick={() => handleStageUpdate(rental.id, "En route")}
+                                    className="rounded-full bg-[#41a7ff] px-5 py-2 text-sm font-semibold text-white transition hover:opacity-90"
+                                  >
+                                    Mark En Route
+                                  </button>
+
+                                  <button
+                                    onClick={() => handleStageUpdate(rental.id, "Near destination")}
+                                    className="rounded-full bg-[#297525] px-5 py-2 text-sm font-semibold text-white transition hover:opacity-90"
+                                  >
+                                    Near Destination
+                                  </button>
+
+                                  <button
+                                    onClick={() => handleStageUpdate(rental.id, "Arrived safely")}
+                                    className="rounded-full bg-[#165713] px-5 py-2 text-sm font-semibold text-white transition hover:opacity-90"
+                                  >
+                                    Arrived Safely
                                   </button>
 
                                   <button

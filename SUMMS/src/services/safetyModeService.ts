@@ -6,6 +6,23 @@ export type SafetyStage =
   | "Arrived safely"
   | "Emergency raised";
 
+export type TrustedContact = {
+  id: string;
+  fullName: string;
+  email: string;
+  phoneNumber: string;
+};
+
+export type SafetyNotification = {
+  id: string;
+  contactId: string;
+  contactName: string;
+  channel: "email" | "sms";
+  status: "sent" | "failed";
+  message: string;
+  sentAt: string;
+};
+
 export type SafetyShareSession = {
   rentalId: string;
   token: string;
@@ -15,11 +32,17 @@ export type SafetyShareSession = {
   providerName: string;
   city: string;
   region: string;
-  trustedContacts: string[];
+  trustedContacts: TrustedContact[];
   isEnabled: boolean;
   isLive: boolean;
+  canGoLive: boolean;
   stage: SafetyStage;
   emergency: boolean;
+  shareSummary: string;
+  tripStartedAt?: string;
+  expectedReturnAt?: string;
+  lastCheckInAt?: string;
+  notifications: SafetyNotification[];
   createdAt: string;
   activatedAt?: string;
   endedAt?: string;
@@ -40,8 +63,55 @@ function createToken() {
   return `share-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
 }
 
+function createId(prefix: string) {
+  return `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+}
+
 function nowIso() {
   return new Date().toISOString();
+}
+
+function buildStartMessage(session: SafetyShareSession) {
+  return `${session.userName} has started a trip in ${session.city}, ${session.region} using ${session.vehicleName}. Safety sharing is now active.`;
+}
+
+function buildEmergencyMessage(session: SafetyShareSession) {
+  return `Emergency alert: ${session.userName} triggered Safety Mode emergency during a trip in ${session.city}, ${session.region}.`;
+}
+
+function createNotifications(
+  contacts: TrustedContact[],
+  message: string,
+): SafetyNotification[] {
+  const notifications: SafetyNotification[] = [];
+
+  contacts.forEach((contact) => {
+    if (contact.email.trim()) {
+      notifications.push({
+        id: createId("notif"),
+        contactId: contact.id,
+        contactName: contact.fullName,
+        channel: "email",
+        status: "sent",
+        message,
+        sentAt: nowIso(),
+      });
+    }
+
+    if (contact.phoneNumber.trim()) {
+      notifications.push({
+        id: createId("notif"),
+        contactId: contact.id,
+        contactName: contact.fullName,
+        channel: "sms",
+        status: "sent",
+        message,
+        sentAt: nowIso(),
+      });
+    }
+  });
+
+  return notifications;
 }
 
 export const safetyModeService = {
@@ -53,8 +123,9 @@ export const safetyModeService = {
     providerName: string;
     city: string;
     region: string;
-    trustedContacts: string[];
+    trustedContacts: TrustedContact[];
     enabled: boolean;
+    expectedReturnAt?: string;
   }): SafetyShareSession | null {
     const sessions = getStoredSessions();
 
@@ -65,6 +136,7 @@ export const safetyModeService = {
     }
 
     const existing = sessions[input.rentalId];
+
     const session: SafetyShareSession = {
       rentalId: input.rentalId,
       token: existing?.token ?? createToken(),
@@ -77,8 +149,14 @@ export const safetyModeService = {
       trustedContacts: input.trustedContacts,
       isEnabled: true,
       isLive: existing?.isLive ?? false,
+      canGoLive: true,
       stage: existing?.stage ?? "Preparing to depart",
       emergency: existing?.emergency ?? false,
+      shareSummary: `Trip in ${input.city}, ${input.region} with ${input.vehicleName}`,
+      tripStartedAt: existing?.tripStartedAt,
+      expectedReturnAt: input.expectedReturnAt ?? existing?.expectedReturnAt,
+      lastCheckInAt: existing?.lastCheckInAt,
+      notifications: existing?.notifications ?? [],
       createdAt: existing?.createdAt ?? nowIso(),
       activatedAt: existing?.activatedAt,
       endedAt: existing?.endedAt,
@@ -102,16 +180,21 @@ export const safetyModeService = {
   startLiveSharing(rentalId: string): SafetyShareSession | null {
     const sessions = getStoredSessions();
     const current = sessions[rentalId];
-    if (!current) return null;
+    if (!current || !current.isEnabled || !current.canGoLive) return null;
 
     const updated: SafetyShareSession = {
       ...current,
-      isEnabled: true,
       isLive: true,
       emergency: false,
       stage: current.stage === "Preparing to depart" ? "Trip started" : current.stage,
+      tripStartedAt: current.tripStartedAt ?? nowIso(),
       activatedAt: current.activatedAt ?? nowIso(),
       endedAt: undefined,
+      lastCheckInAt: nowIso(),
+      notifications: [
+        ...current.notifications,
+        ...createNotifications(current.trustedContacts, buildStartMessage(current)),
+      ],
       lastUpdatedAt: nowIso(),
     };
 
@@ -129,8 +212,9 @@ export const safetyModeService = {
       ...current,
       isLive: false,
       emergency: false,
-      stage: current.stage === "Arrived safely" ? current.stage : "Arrived safely",
+      stage: current.stage === "Emergency raised" ? current.stage : "Arrived safely",
       endedAt: nowIso(),
+      lastCheckInAt: nowIso(),
       lastUpdatedAt: nowIso(),
     };
 
@@ -142,14 +226,13 @@ export const safetyModeService = {
   updateStage(rentalId: string, stage: SafetyStage): SafetyShareSession | null {
     const sessions = getStoredSessions();
     const current = sessions[rentalId];
-    if (!current) return null;
+    if (!current || !current.isEnabled || !current.isLive) return null;
 
     const updated: SafetyShareSession = {
       ...current,
       stage,
       emergency: stage === "Emergency raised",
-      isLive: true,
-      activatedAt: current.activatedAt ?? nowIso(),
+      lastCheckInAt: nowIso(),
       lastUpdatedAt: nowIso(),
     };
 
@@ -159,7 +242,47 @@ export const safetyModeService = {
   },
 
   triggerEmergency(rentalId: string): SafetyShareSession | null {
-    return this.updateStage(rentalId, "Emergency raised");
+    const sessions = getStoredSessions();
+    const current = sessions[rentalId];
+    if (!current || !current.isEnabled || !current.isLive) return null;
+
+    const updated: SafetyShareSession = {
+      ...current,
+      stage: "Emergency raised",
+      emergency: true,
+      lastCheckInAt: nowIso(),
+      notifications: [
+        ...current.notifications,
+        ...createNotifications(current.trustedContacts, buildEmergencyMessage(current)),
+      ],
+      lastUpdatedAt: nowIso(),
+    };
+
+    sessions[rentalId] = updated;
+    saveStoredSessions(sessions);
+    return updated;
+  },
+
+  sendCheckInUpdate(rentalId: string): SafetyShareSession | null {
+    const sessions = getStoredSessions();
+    const current = sessions[rentalId];
+    if (!current || !current.isEnabled || !current.isLive) return null;
+
+    const message = `${current.userName} checked in safely. Current trip stage: ${current.stage}.`;
+
+    const updated: SafetyShareSession = {
+      ...current,
+      lastCheckInAt: nowIso(),
+      notifications: [
+        ...current.notifications,
+        ...createNotifications(current.trustedContacts, message),
+      ],
+      lastUpdatedAt: nowIso(),
+    };
+
+    sessions[rentalId] = updated;
+    saveStoredSessions(sessions);
+    return updated;
   },
 
   clearSession(rentalId: string) {

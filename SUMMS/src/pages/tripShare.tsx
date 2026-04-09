@@ -18,7 +18,7 @@ const valueStyle: React.CSSProperties = {
 };
 
 const cardStyle: React.CSSProperties = {
-  maxWidth: "720px",
+  maxWidth: "820px",
   margin: "40px auto",
   padding: "24px",
   borderRadius: "20px",
@@ -78,10 +78,7 @@ function formatDateTime(value?: string) {
 
 export default function TripShare() {
   const { token } = useParams<{ token: string }>();
-
-  const session = token
-    ? safetyModeService.getSessionByToken(token)
-    : null;
+  const session = token ? safetyModeService.getSessionByToken(token) : null;
 
   if (!session) {
     return (
@@ -132,16 +129,12 @@ export default function TripShare() {
               Live Trip Safety Share
             </h1>
             <p style={{ marginTop: "8px", color: "#6b7280" }}>
-              Follow this rider's trip status in real time.
+              Shared trip status for safety monitoring.
             </p>
           </div>
 
           <span style={getStatusBadgeStyle(session)}>
-            {session.emergency || session.stage === "Emergency raised"
-              ? "Emergency"
-              : session.isLive
-              ? "Live"
-              : "Offline"}
+            {session.emergency ? "Emergency" : session.isLive ? "Live" : "Offline"}
           </span>
         </div>
 
@@ -164,11 +157,14 @@ export default function TripShare() {
 
             <div>
               <div style={labelStyle}>Trip Area</div>
-              <div style={valueStyle}>
-                {session.city}, {session.region}
-              </div>
+              <div style={valueStyle}>{session.city}, {session.region}</div>
             </div>
           </div>
+        </div>
+
+        <div style={sectionStyle}>
+          <div style={labelStyle}>Trip Summary</div>
+          <div style={{ ...valueStyle, fontSize: "1.05rem" }}>{session.shareSummary}</div>
         </div>
 
         <div style={sectionStyle}>
@@ -204,8 +200,18 @@ export default function TripShare() {
             </div>
 
             <div>
-              <div style={labelStyle}>Live Sharing Started</div>
-              <div style={valueStyle}>{formatDateTime(session.activatedAt)}</div>
+              <div style={labelStyle}>Trip Started</div>
+              <div style={valueStyle}>{formatDateTime(session.tripStartedAt)}</div>
+            </div>
+
+            <div>
+              <div style={labelStyle}>Expected Return</div>
+              <div style={valueStyle}>{formatDateTime(session.expectedReturnAt)}</div>
+            </div>
+
+            <div>
+              <div style={labelStyle}>Last Check-In</div>
+              <div style={valueStyle}>{formatDateTime(session.lastCheckInAt)}</div>
             </div>
 
             <div>
@@ -222,7 +228,7 @@ export default function TripShare() {
 
         <div style={sectionStyle}>
           <h2 style={{ marginTop: 0, color: "#111827", fontSize: "1.15rem" }}>
-            Trusted Contacts
+            Trusted Contacts Notified
           </h2>
 
           {session.trustedContacts.length === 0 ? (
@@ -231,8 +237,30 @@ export default function TripShare() {
             </p>
           ) : (
             <ul style={{ margin: 0, paddingLeft: "20px", color: "#111827", lineHeight: 1.8 }}>
-              {session.trustedContacts.map((contact, index) => (
-                <li key={`${contact}-${index}`}>{contact}</li>
+              {session.trustedContacts.map((contact) => (
+                <li key={contact.id}>
+                  {contact.fullName}
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+
+        <div style={sectionStyle}>
+          <h2 style={{ marginTop: 0, color: "#111827", fontSize: "1.15rem" }}>
+            Notification Log
+          </h2>
+
+          {session.notifications.length === 0 ? (
+            <p style={{ margin: 0, color: "#6b7280" }}>
+              No notifications have been sent yet.
+            </p>
+          ) : (
+            <ul style={{ margin: 0, paddingLeft: "20px", color: "#111827", lineHeight: 1.8 }}>
+              {session.notifications.slice(-8).reverse().map((notification) => (
+                <li key={notification.id}>
+                  {notification.channel.toUpperCase()} sent to {notification.contactName} at {formatDateTime(notification.sentAt)}
+                </li>
               ))}
             </ul>
           )}
@@ -255,7 +283,7 @@ export default function TripShare() {
           </Link>
 
           <Link
-            to="/manage-rentals"
+            to="/my-rentals"
             style={{
               textDecoration: "none",
               display: "inline-block",
@@ -266,7 +294,7 @@ export default function TripShare() {
               fontWeight: 600,
             }}
           >
-            Manage Rentals
+            My Rentals
           </Link>
         </div>
       </div>
