@@ -29,6 +29,33 @@ export function getAnalytics(): AnalyticsState {
   return loadAnalytics();
 }
 
+export function recordRentalStarted() {
+  const analytics = loadAnalytics();
+  analytics.activeRentals += 1;
+  saveAnalytics(analytics);
+}
+
+export function recordRentalCompleted() {
+  const analytics = loadAnalytics();
+
+  if (analytics.activeRentals > 0) {
+    analytics.activeRentals -= 1;
+  }
+
+  analytics.completedRentals += 1;
+  saveAnalytics(analytics);
+}
+
+export function recordRentalCancelled(wasActive: boolean) {
+  const analytics = loadAnalytics();
+
+  if (wasActive && analytics.activeRentals > 0) {
+    analytics.activeRentals -= 1;
+  }
+
+  saveAnalytics(analytics);
+}
+
 export class RentalAnalyticsObserver implements Observer {
   update(event: string): void {
     const analytics = loadAnalytics();
